@@ -12,3 +12,4 @@ build/
 mlruns/
 .dvc/cache/
 models/
+data/raw/*.json
