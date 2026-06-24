@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+node_modules/
+.next/
+dist/
+build/
+
+mlruns/
+.dvc/cache/
+models/
