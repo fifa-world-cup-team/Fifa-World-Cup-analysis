@@ -11,6 +11,13 @@ build/
 
 mlruns/
 .dvc/cache/
-models/
+
+models/*
+!models/.gitkeep
+models/*.pkl
+models/*.joblib
+models/*.json
 data/raw/*.json
 data/processed/*.csv
+
+
