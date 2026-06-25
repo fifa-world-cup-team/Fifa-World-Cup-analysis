@@ -13,3 +13,4 @@ mlruns/
 .dvc/cache/
 models/
 data/raw/*.json
+data/processed/*.csv

@@ -9,6 +9,20 @@ import requests
 DEFAULT_BASE_URL = "https://api.football-data.org/v4"
 DEFAULT_COMPETITION = "WC"
 OUTPUT_PATH = Path("data/raw/worldcup_matches.json")
+ENV_PATH = Path(".env")
+
+
+def load_env_file(env_path: Path = ENV_PATH) -> None:
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        clean_line = line.strip()
+        if not clean_line or clean_line.startswith("#") or "=" not in clean_line:
+            continue
+
+        name, value = clean_line.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip('"').strip("'"))
 
 
 def get_required_env(name: str) -> str:
@@ -46,6 +60,7 @@ def save_raw_payload(payload: dict, output_path: Path = OUTPUT_PATH) -> None:
 
 
 def main() -> None:
+    load_env_file()
     api_key = get_required_env("FOOTBALL_DATA_API_KEY")
     base_url = os.getenv("FOOTBALL_DATA_BASE_URL", DEFAULT_BASE_URL)
     competition = os.getenv("FOOTBALL_DATA_COMPETITION", DEFAULT_COMPETITION)

@@ -73,3 +73,23 @@ Personne ne travaille directement sur `dev`, `staging` ou `main`.
 - Frontend / DevOps: interface Next.js, Docker, CI/CD, Render, monitoring
 
 Voir le fichier `docs/team-tasks.md` pour plus de details.
+
+## Mise a jour des donnees
+
+Les donnees brutes ne se mettent pas a jour automatiquement.
+
+Pour actualiser les matchs depuis l'API puis regenerer le fichier traite:
+
+```powershell
+python scripts/update_data.py
+```
+
+Cette commande cree localement:
+
+```text
+data/raw/worldcup_matches.json
+data/processed/matches_processed.csv
+```
+
+Ces fichiers generes sont ignores par Git pour le moment. Ils seront versionnes
+plus tard avec DVC.
