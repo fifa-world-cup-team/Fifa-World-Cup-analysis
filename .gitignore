@@ -1,23 +1,41 @@
-.env
-.venv/
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
-
-node_modules/
-.next/
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
 dist/
 build/
+.eggs/
+.env
+.venv
+env/
+venv/
 
-mlruns/
-.dvc/cache/
-
-models/*
-!models/.gitkeep
+# ML model artifacts (keep directory structure, ignore generated files)
 models/*.pkl
 models/*.joblib
 models/*.json
-data/raw/*.json
-data/processed/*.csv
 
+# MLflow
+mlruns/
+mlartifacts/
 
+# DVC
+.dvc/tmp/
+.dvc/cache/
+
+# Data (tracked by DVC, not Git)
+data/raw/
+data/processed/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
