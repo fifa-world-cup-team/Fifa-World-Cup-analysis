@@ -140,3 +140,35 @@ features de niveau d'equipe.
 Note: ce classement courant est surtout pertinent pour predire les matchs a
 venir. Pour un backtest historique strict, il faudra plus tard recuperer les
 classements FIFA correspondant aux dates des matchs.
+
+## Dataset d'entrainement enrichi
+
+Pour joindre les matchs avec le classement FIFA et creer le dataset utilise par
+le modele:
+
+```powershell
+python scripts/build_training_dataset.py
+```
+
+Cette commande cree localement:
+
+```text
+data/processed/training_matches.csv
+```
+
+Le script ajoute notamment:
+
+```text
+home_rank
+away_rank
+home_fifa_points
+away_fifa_points
+rank_difference
+points_difference
+```
+
+Le modele baseline lit maintenant ce dataset enrichi:
+
+```powershell
+python scripts/train_baseline_model.py
+```

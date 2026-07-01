@@ -4,20 +4,43 @@ from scripts.train_baseline_model import train_model
 
 
 def test_train_model_returns_model_and_accuracy() -> None:
+    def row(
+        home_team: str,
+        away_team: str,
+        stage: str,
+        result: str,
+        home_rank: int,
+        away_rank: int,
+        home_points: float,
+        away_points: float,
+    ) -> dict[str, object]:
+        return {
+            "home_team": home_team,
+            "away_team": away_team,
+            "stage": stage,
+            "result": result,
+            "home_rank": home_rank,
+            "away_rank": away_rank,
+            "home_fifa_points": home_points,
+            "away_fifa_points": away_points,
+            "rank_difference": away_rank - home_rank,
+            "points_difference": home_points - away_points,
+        }
+
     dataset = pd.DataFrame(
         [
-            {"home_team": "France", "away_team": "Argentina", "stage": "GROUP_STAGE", "result": "home_win"},
-            {"home_team": "Brazil", "away_team": "Spain", "stage": "GROUP_STAGE", "result": "draw"},
-            {"home_team": "Germany", "away_team": "Italy", "stage": "GROUP_STAGE", "result": "away_win"},
-            {"home_team": "France", "away_team": "Brazil", "stage": "ROUND_OF_16", "result": "home_win"},
-            {"home_team": "Spain", "away_team": "Germany", "stage": "ROUND_OF_16", "result": "draw"},
-            {"home_team": "Italy", "away_team": "Argentina", "stage": "ROUND_OF_16", "result": "away_win"},
-            {"home_team": "Argentina", "away_team": "Brazil", "stage": "QUARTER_FINALS", "result": "home_win"},
-            {"home_team": "Germany", "away_team": "France", "stage": "QUARTER_FINALS", "result": "draw"},
-            {"home_team": "Spain", "away_team": "Italy", "stage": "QUARTER_FINALS", "result": "away_win"},
-            {"home_team": "Brazil", "away_team": "Germany", "stage": "SEMI_FINALS", "result": "home_win"},
-            {"home_team": "Italy", "away_team": "France", "stage": "SEMI_FINALS", "result": "draw"},
-            {"home_team": "Argentina", "away_team": "Spain", "stage": "SEMI_FINALS", "result": "away_win"},
+            row("France", "Argentina", "GROUP_STAGE", "home_win", 3, 1, 1870.7, 1877.3),
+            row("Brazil", "Spain", "GROUP_STAGE", "draw", 6, 2, 1761.0, 1874.7),
+            row("Germany", "Italy", "GROUP_STAGE", "away_win", 10, 9, 1717.0, 1718.0),
+            row("France", "Brazil", "ROUND_OF_16", "home_win", 3, 6, 1870.7, 1761.0),
+            row("Spain", "Germany", "ROUND_OF_16", "draw", 2, 10, 1874.7, 1717.0),
+            row("Italy", "Argentina", "ROUND_OF_16", "away_win", 9, 1, 1718.0, 1877.3),
+            row("Argentina", "Brazil", "QUARTER_FINALS", "home_win", 1, 6, 1877.3, 1761.0),
+            row("Germany", "France", "QUARTER_FINALS", "draw", 10, 3, 1717.0, 1870.7),
+            row("Spain", "Italy", "QUARTER_FINALS", "away_win", 2, 9, 1874.7, 1718.0),
+            row("Brazil", "Germany", "SEMI_FINALS", "home_win", 6, 10, 1761.0, 1717.0),
+            row("Italy", "France", "SEMI_FINALS", "draw", 9, 3, 1718.0, 1870.7),
+            row("Argentina", "Spain", "SEMI_FINALS", "away_win", 1, 2, 1877.3, 1874.7),
         ]
     )
 

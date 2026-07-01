@@ -28,17 +28,17 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | Fichier genere | `data/raw/fifa_ranking_current.json` |
 | Donnees recuperees | 211 equipes, classement officiel du 11 June, 2026 |
 | Dataset ML ranking | `data/processed/fifa_rankings_current.csv` |
+| Dataset d'entrainement enrichi | `data/processed/training_matches.csv` |
 | Git | Le JSON genere est ignore par Git |
-| Tests | 10 tests passent |
+| Tests | 13 tests passent |
+| Modele baseline enrichi | Accuracy locale: 0.643 |
 
 ---
 
 ## Ce qui reste a faire ?
 
-### 1. Integrer le classement FIFA aux matchs
-Joindre `data/processed/fifa_rankings_current.csv` avec les matchs pour ajouter
-les colonnes `home_rank`, `away_rank`, `home_points`, `away_points`,
-`rank_difference` et `points_difference` au dataset d'entrainement.
+### 1. Versionner le nouveau dataset avec DVC
+Ajouter `data/processed/training_matches.csv` a DVC apres validation de la PR.
 
 ### 2. GitHub Actions CI/CD
 ### 3. Backend FastAPI + Docker
