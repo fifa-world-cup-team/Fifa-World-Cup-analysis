@@ -8,12 +8,22 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 
 
-DATASET_PATH = Path("data/processed/matches_processed.csv")
+DATASET_PATH = Path("data/processed/training_matches.csv")
 MODEL_PATH = Path("models/baseline_model.joblib")
-FEATURE_COLUMNS = ["home_team", "away_team", "stage"]
+CATEGORICAL_FEATURE_COLUMNS = ["home_team", "away_team", "stage"]
+NUMERIC_FEATURE_COLUMNS = [
+    "rank_difference",
+    "points_difference",
+    "home_rank",
+    "away_rank",
+    "home_fifa_points",
+    "away_fifa_points",
+]
+FEATURE_COLUMNS = [*CATEGORICAL_FEATURE_COLUMNS, *NUMERIC_FEATURE_COLUMNS]
 TARGET_COLUMN = "result"
 RANDOM_STATE = 42
 
@@ -22,7 +32,7 @@ def load_dataset(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
     if not dataset_path.exists():
         raise RuntimeError(
             f"Missing processed dataset {dataset_path}. "
-            "Run scripts/update_data.py first."
+            "Run scripts/build_training_dataset.py first."
         )
 
     dataset = pd.read_csv(dataset_path)
@@ -69,7 +79,12 @@ def train_model(dataset: pd.DataFrame) -> tuple[Pipeline, float]:
                         (
                             "categorical",
                             OneHotEncoder(handle_unknown="ignore"),
-                            FEATURE_COLUMNS,
+                            CATEGORICAL_FEATURE_COLUMNS,
+                        ),
+                        (
+                            "numeric",
+                            StandardScaler(),
+                            NUMERIC_FEATURE_COLUMNS,
                         )
                     ]
                 ),
