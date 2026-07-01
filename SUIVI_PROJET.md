@@ -27,15 +27,17 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | RapidAPI World Football Ranking | OK - appel live valide |
 | Fichier genere | `data/raw/fifa_ranking_current.json` |
 | Donnees recuperees | 211 equipes, classement officiel du 11 June, 2026 |
+| Dataset ML ranking | `data/processed/fifa_rankings_current.csv` |
 | Git | Le JSON genere est ignore par Git |
-| Tests | 8 tests passent |
+| Tests | 10 tests passent |
 
 ---
 
 ## Ce qui reste a faire ?
 
-### 1. Integrer le classement FIFA au preprocessing
-Ajouter les colonnes `home_rank`, `away_rank`, `home_points`, `away_points`,
+### 1. Integrer le classement FIFA aux matchs
+Joindre `data/processed/fifa_rankings_current.csv` avec les matchs pour ajouter
+les colonnes `home_rank`, `away_rank`, `home_points`, `away_points`,
 `rank_difference` et `points_difference` au dataset d'entrainement.
 
 ### 2. GitHub Actions CI/CD

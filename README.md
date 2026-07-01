@@ -120,3 +120,23 @@ data/raw/fifa_ranking_current.json
 
 Si RapidAPI retourne une erreur `401` ou `403`, verifier que la cle est correcte
 et que l'API World Football Ranking est bien activee dans le compte RapidAPI.
+
+Pour transformer ce JSON en dataset exploitable pour le ML:
+
+```powershell
+python scripts/preprocess_fifa_rankings.py
+```
+
+Cette commande cree localement:
+
+```text
+data/processed/fifa_rankings_current.csv
+```
+
+Ce CSV contient notamment `rank`, `fifa_points`, `rank_change`,
+`points_change` et `confederation`. Il servira a enrichir les matchs avec des
+features de niveau d'equipe.
+
+Note: ce classement courant est surtout pertinent pour predire les matchs a
+venir. Pour un backtest historique strict, il faudra plus tard recuperer les
+classements FIFA correspondant aux dates des matchs.
