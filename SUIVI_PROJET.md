@@ -1,29 +1,34 @@
-# Suivi projet MLOps — FIFA World Cup 2026
+# Suivi projet MLOps â€” FIFA World Cup 2026
 
-Groupe : Diaby · Adrien · Ilyesse  
-Repo GitHub : https://github.com/Adrienqry/Fifa-World-Cup-analysis  
+Groupe : Diaby Â· Adrien Â· Ilyesse
+Repo GitHub : https://github.com/Adrienqry/Fifa-World-Cup-analysis
 Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 
 ---
 
 ## Ce qui est fait ?
 
-| Branche | Ce que ça fait | Qui |
+| Branche | Ce que Ã§a fait | Qui |
 |---|---|---|
 | feature/fix-gitignore | Fix du .gitignore qui bloquait git add | Diaby |
 | feature/strengthen-tests | 4 tests solides + pytest.ini | Diaby |
-| feature/mlflow-integration | Tracking MLflow dans le script d'entraînement | Diaby |
-| feature/dvc-setup | Versioning des données avec DVC + stockage DagsHub | Diaby |
-| feature/baseline-model | Script d'entraînement du modèle (LogisticRegression) | Adrien |
+| feature/mlflow-integration | Tracking MLflow dans le script d'entraÃ®nement | Diaby |
+| feature/dvc-setup | Versioning des donnÃ©es avec DVC + stockage DagsHub | Diaby |
+| feature/baseline-model | Script d'entraÃ®nement du modÃ¨le (LogisticRegression) | Adrien |
 | feature/data-tests | Tests basiques preprocessing + train | Ilyesse |
+| feature/fifa-ranking-api | Ingestion du classement FIFA via RapidAPI pour enrichir les features | Adrien |
 
 ---
 
-## Ce qui reste à faire ?
+## Ce qui reste Ã  faire ?
+
+### 0. VÃ©rifier l'accÃ¨s RapidAPI World Football Ranking
+Le script est prÃªt, mais l'appel live retourne encore `403 Forbidden`.
+Il faut vÃ©rifier que l'API est bien activÃ©e dans le compte RapidAPI.
 
 ### 1. GitHub Actions CI/CD
 ### 2. Backend FastAPI + Docker
 ### 3. Monitoring Prometheus + Grafana
 ### 4. Frontend Next.js
-### 5. Déploiement cloud
+### 5. DÃ©ploiement cloud
 ### 6. README final

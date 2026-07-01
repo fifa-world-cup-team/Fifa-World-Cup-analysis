@@ -93,3 +93,30 @@ data/processed/matches_processed.csv
 
 Ces fichiers generes sont ignores par Git pour le moment. Ils seront versionnes
 plus tard avec DVC.
+
+## Classement FIFA
+
+Le projet peut aussi recuperer le classement FIFA depuis l'API World Football
+Ranking de RapidAPI. Cette source servira plus tard a ajouter des features comme
+le rang FIFA, les points FIFA et la difference de niveau entre deux equipes.
+
+Ajouter la cle RapidAPI dans `.env`:
+
+```text
+WORLD_FOOTBALL_RANKING_API_KEY=your_key_here
+```
+
+Puis lancer:
+
+```powershell
+python scripts/ingest_fifa_rankings.py
+```
+
+Cette commande cree localement:
+
+```text
+data/raw/fifa_ranking_current.json
+```
+
+Si RapidAPI retourne une erreur `401` ou `403`, verifier que la cle est correcte
+et que l'API World Football Ranking est bien activee dans le compte RapidAPI.
