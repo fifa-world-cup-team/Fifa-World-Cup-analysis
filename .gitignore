@@ -28,8 +28,6 @@ mlartifacts/
 .dvc/cache/
 
 # Data (tracked by DVC, not Git)
-data/raw/
-data/processed/
 
 # OS
 .DS_Store

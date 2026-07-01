@@ -1,0 +1,5 @@
+outs:
+- md5: e5327c7577b1efda28c4af5c3e623893
+  size: 165106
+  hash: md5
+  path: worldcup_matches.json
