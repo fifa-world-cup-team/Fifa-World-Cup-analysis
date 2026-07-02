@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { fetchPrediction, RESULT_LABELS, type Match, type Prediction } from "@/lib/api";
+import { fetchPrediction, probabilityLabels, resultLabel, type Match, type Prediction } from "@/lib/api";
 import { TeamBadge } from "./TeamBadge";
 
 function formatDate(isoDate: string): string {
@@ -11,6 +11,29 @@ function formatDate(isoDate: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "FINISHED") {
+    return (
+      <span className="rounded-full bg-zinc-700/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-300">
+        Terminé
+      </span>
+    );
+  }
+  if (status === "IN_PLAY" || status === "LIVE" || status === "PAUSED") {
+    return (
+      <span className="flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300 ring-1 ring-red-500/40">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+        En direct
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-500/30">
+      À venir
+    </span>
+  );
 }
 
 export function MatchRow({ match }: { match: Match }) {
@@ -36,45 +59,54 @@ export function MatchRow({ match }: { match: Match }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-zinc-100 py-3 last:border-none dark:border-zinc-800">
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <span className="w-1/3">
+    <div className="flex flex-col gap-2 rounded-xl px-3 py-3 transition-colors hover:bg-emerald-900/20">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="w-2/5">
           <TeamBadge team={match.home_team} />
         </span>
 
-        <span className="shrink-0 text-center font-semibold text-zinc-700 dark:text-zinc-300">
+        <span className="flex shrink-0 flex-col items-center gap-1">
           {isFinished ? (
-            `${match.home_score} - ${match.away_score}`
+            <span className="rounded-lg bg-emerald-950/80 px-3 py-1 text-base font-bold text-emerald-50 ring-1 ring-emerald-700/50">
+              {match.home_score} - {match.away_score}
+            </span>
           ) : (
-            <span className="text-xs text-zinc-400">{formatDate(match.utc_date)}</span>
+            <span className="text-xs font-medium text-emerald-200/60">
+              {formatDate(match.utc_date)}
+            </span>
           )}
+          <StatusBadge status={match.status} />
         </span>
 
-        <span className="w-1/3">
+        <span className="w-2/5">
           <TeamBadge team={match.away_team} align="right" />
         </span>
       </div>
 
       {canPredict && (
-        <div className="flex items-center gap-3 pl-1 text-xs">
+        <div className="flex flex-wrap items-center gap-2 pl-1 text-xs">
           <button
             onClick={handlePredict}
             disabled={loading}
-            className="rounded-full bg-zinc-900 px-3 py-1 font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
+            className="rounded-full bg-emerald-500 px-3 py-1 font-semibold text-emerald-950 transition-colors hover:bg-emerald-400 disabled:opacity-50"
           >
-            {loading ? "..." : prediction ? "Re-prédire" : "Prédire"}
+            {loading ? "..." : prediction ? "Re-prédire" : "⚡ Prédire"}
           </button>
 
-          {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
+          {error && <span className="text-red-300">{error}</span>}
 
-          {prediction && (
-            <span className="flex gap-2 text-zinc-600 dark:text-zinc-400">
-              <strong>{RESULT_LABELS[prediction.prediction] ?? prediction.prediction}</strong>
-              {Object.entries(prediction.probabilities).map(([label, value]) => (
-                <span key={label}>
-                  {RESULT_LABELS[label] ?? label}: {(value * 100).toFixed(0)}%
-                </span>
-              ))}
+          {prediction && match.home_team && match.away_team && (
+            <span className="flex flex-wrap items-center gap-2 rounded-lg bg-emerald-950/60 px-2.5 py-1 text-emerald-100">
+              <strong className="text-emerald-300">
+                {resultLabel(prediction.prediction, match.home_team.name, match.away_team.name)}
+              </strong>
+              {probabilityLabels(prediction.probabilities, match.home_team.name, match.away_team.name).map(
+                ({ label, value }) => (
+                  <span key={label} className="text-emerald-100/70">
+                    {label}: {(value * 100).toFixed(0)}%
+                  </span>
+                ),
+              )}
             </span>
           )}
         </div>

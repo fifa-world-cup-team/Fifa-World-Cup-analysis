@@ -37,34 +37,38 @@ export function MatchesSection({ matches }: { matches: Match[] }) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Prochains matchs & prédictions
+      <section className="rounded-2xl border border-emerald-800/40 bg-emerald-950/40 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
+        <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-emerald-50">
+          📅 Prochains matchs & prédictions
         </h2>
         {groupByStage(upcoming).map(([stage, stageMatches]) => (
-          <div key={stage} className="mb-4">
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <div key={stage} className="mb-3">
+            <h3 className="mb-1 mt-3 text-xs font-bold uppercase tracking-widest text-emerald-400/70">
               {STAGE_LABELS[stage] ?? stage}
             </h3>
-            {stageMatches.map((match) => (
-              <MatchRow key={match.id} match={match} />
-            ))}
+            <div className="divide-y divide-emerald-900/40">
+              {stageMatches.map((match) => (
+                <MatchRow key={match.id} match={match} />
+              ))}
+            </div>
           </div>
         ))}
         {upcoming.length === 0 && (
-          <p className="text-sm text-zinc-500">Aucun match à venir pour le moment.</p>
+          <p className="text-sm text-emerald-200/60">Aucun match à venir pour le moment.</p>
         )}
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Derniers résultats
+      <section className="rounded-2xl border border-emerald-800/40 bg-emerald-950/40 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
+        <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-emerald-50">
+          ⚽ Derniers résultats
         </h2>
-        {finished.map((match) => (
-          <MatchRow key={match.id} match={match} />
-        ))}
+        <div className="divide-y divide-emerald-900/40">
+          {finished.map((match) => (
+            <MatchRow key={match.id} match={match} />
+          ))}
+        </div>
         {finished.length === 0 && (
-          <p className="text-sm text-zinc-500">Aucun résultat pour le moment.</p>
+          <p className="text-sm text-emerald-200/60">Aucun résultat pour le moment.</p>
         )}
       </section>
     </div>
