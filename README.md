@@ -24,6 +24,22 @@ curl -X POST https://fifa-backend-production.onrender.com/predict \
   -d '{"home_team": "France", "away_team": "Argentina", "stage": "GROUP_STAGE"}'
 ```
 
+## Endpoints de l'API
+
+| Endpoint | Description |
+|---|---|
+| `POST /predict` | Prédit le résultat d'un match (`home_team`, `away_team`, `stage`) |
+| `GET /matches` | Matchs de la Coupe du Monde en cours (statut, score, groupe, phase) — proxy en cache de football-data.org |
+| `GET /standings` | Classements par groupe |
+| `GET /tournament` | Simulation du bracket à élimination directe et du vainqueur final probable |
+| `GET /health` | État du service |
+| `GET /metrics` | Métriques Prometheus |
+
+Le frontend (`frontend/`) consomme ces endpoints pour afficher un dashboard en
+direct : prochains matchs avec prédiction, derniers résultats, classements,
+simulateur libre, et vainqueur final probable — rafraîchi automatiquement
+toutes les 60 secondes.
+
 ## Architecture
 
 ```mermaid
@@ -152,6 +168,7 @@ Variables d'environnement nécessaires dans `.env` :
 | Variable | Usage |
 |---|---|
 | `WORLD_FOOTBALL_RANKING_API_KEY` | clé RapidAPI pour récupérer le classement FIFA |
+| `FOOTBALL_DATA_API_KEY` | clé football-data.org pour les matchs/classements en direct (`/matches`, `/standings`, `/tournament`) |
 | `MLFLOW_TRACKING_URI` | serveur MLflow DagsHub |
 | `MLFLOW_TRACKING_USERNAME` / `MLFLOW_TRACKING_PASSWORD` | identifiants DagsHub |
 | `DAGSHUB_USERNAME` / `DAGSHUB_TOKEN` | identifiants pour `dvc pull` |
