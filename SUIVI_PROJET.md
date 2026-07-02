@@ -42,11 +42,13 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 ### 1. ~~Versionner le nouveau dataset avec DVC~~ (fait)
 `fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
-### 2. GitHub Actions CI/CD
-PR → dev fait (tests dont 2 intégration + 1 e2e, build Docker). Pipelines dev → staging (tests, dvc pull, entraînement candidat, quality gate accuracy >= 0.5, promotion Staging/Production, déploiement Render) et staging → main (vérification gate + déploiement Render prod) écrits. Reste : ajouter les secrets GitHub (DAGSHUB_USERNAME, DAGSHUB_TOKEN, MLFLOW_TRACKING_URI, RENDER_STAGING_DEPLOY_HOOK, RENDER_PRODUCTION_DEPLOY_HOOK) et tester en conditions réelles.
+### 2. ~~GitHub Actions CI/CD~~ (fait)
+Les 3 pipelines exigés tournent réellement : PR → dev (tests + build Docker), dev → staging (tests, dvc pull, entraînement candidat, quality gate accuracy >= 0.5, promotion Staging/Production MLflow, déploiement Render), staging → main (vérification du gate + déploiement Render prod). Testés en conditions réelles le 2026-07-02, prédiction confirmée sur les deux environnements.
 ### 3. ~~Backend FastAPI + Docker~~ (fait)
-API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`, défaut `None`), et sert `/health` + `POST /predict` (home_team, away_team, stage -> prédiction + probabilités). `Dockerfile` ajouté, build vérifié en local et intégré au CI (PR -> dev, sans push). Note : l'image ne contient pas encore les données DVC (`data/`) — à prévoir au déploiement (pipeline dev -> staging).
-### 4. Monitoring Prometheus + Grafana
-### 5. Frontend Next.js
-### 6. Déploiement cloud
-### 7. README final
+API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`), sert `/health` + `POST /predict`. Le conteneur récupère les données via `dvc pull` à son démarrage (identifiants DagsHub passés en variables d'env).
+### 4. ~~Déploiement cloud~~ (fait, Render)
+- Staging : https://fifa-world-cup-analysis-phep.onrender.com
+- Production : https://fifa-backend-production.onrender.com
+### 5. Monitoring Prometheus + Grafana
+### 6. Frontend Next.js
+### 7. README final (architecture, CI/CD, promotion, reproductibilité)
