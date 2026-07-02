@@ -1,0 +1,56 @@
+name: Model Promotion Pipeline (dev to staging)
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run full test suite
+        run: pytest
+
+      - name: Configure DVC remote credentials
+        run: |
+          mkdir -p .dvc
+          cat > .dvc/config.local <<CONFIG
+          ['remote "dagshub"']
+              auth = basic
+              user = ${{ secrets.DAGSHUB_USERNAME }}
+              password = ${{ secrets.DAGSHUB_TOKEN }}
+          CONFIG
+
+      - name: Pull DVC data
+        run: dvc pull
+
+      - name: Train candidate model
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: python -m scripts.train_baseline_model
+
+      - name: Run quality gate and promote candidate
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          QUALITY_GATE_MIN_ACCURACY: "0.5"
+        run: python -m scripts.promote_model
+
+      - name: Deploy to staging
+        run: curl -fsS -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}"
