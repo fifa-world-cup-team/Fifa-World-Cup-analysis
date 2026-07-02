@@ -51,7 +51,12 @@ API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (
 - Production : https://fifa-backend-production.onrender.com
 ### 5. ~~Monitoring Prometheus + Grafana~~ (fait)
 Endpoint `/metrics` sur le backend, déployés sur Render : Prometheus (https://fifa-prometheus.onrender.com, scrape la prod toutes les 30s) et Grafana (https://fifa-graphana.onrender.com, dashboard "FIFA World Cup Backend" provisionné automatiquement). Chaîne vérifiée en direct.
-### 6. Frontend Next.js
-App (`frontend/`) avec formulaire de prédiction (2 équipes + stade) qui appelle l'API de production. Buildée et testée en local (Docker inclus, `output: "standalone"`). Reste : déployer sur Render.
-### 7. README final (architecture, CI/CD, promotion, reproductibilité)
-Fait, PR #28 en attente de merge.
+### 6. ~~Frontend Next.js~~ (fait)
+App (`frontend/`) avec formulaire de prédiction (2 équipes + stade) qui appelle l'API de production. Déployée sur Render : https://fifa-frontend-7be5.onrender.com
+### 7. ~~README final~~ (fait)
+Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.
+
+---
+
+## Projet complet
+Toutes les exigences du cahier des charges sont couvertes : branching model, 3 pipelines CI/CD (testés en conditions réelles), tests (unit/intégration/e2e), DVC, MLflow (tracking + registry + promotion), backend Dockerisé, monitoring Prometheus/Grafana, frontend, déploiement cloud, README. Reste : présentation en classe.
