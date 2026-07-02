@@ -43,7 +43,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 `fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
 ### 2. GitHub Actions CI/CD
-PR → dev fait (tests, dont 2 tests d'intégration + 1 e2e ajoutés). Reste : build Docker (bloqué par l'absence de backend), pipelines dev → staging et staging → main.
+PR → dev fait (tests dont 2 intégration + 1 e2e, build Docker). Pipelines dev → staging (tests, dvc pull, entraînement candidat, quality gate accuracy >= 0.5, promotion Staging/Production, déploiement Render) et staging → main (vérification gate + déploiement Render prod) écrits. Reste : ajouter les secrets GitHub (DAGSHUB_USERNAME, DAGSHUB_TOKEN, MLFLOW_TRACKING_URI, RENDER_STAGING_DEPLOY_HOOK, RENDER_PRODUCTION_DEPLOY_HOOK) et tester en conditions réelles.
 ### 3. ~~Backend FastAPI + Docker~~ (fait)
 API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`, défaut `None`), et sert `/health` + `POST /predict` (home_team, away_team, stage -> prédiction + probabilités). `Dockerfile` ajouté, build vérifié en local et intégré au CI (PR -> dev, sans push). Note : l'image ne contient pas encore les données DVC (`data/`) — à prévoir au déploiement (pipeline dev -> staging).
 ### 4. Monitoring Prometheus + Grafana
