@@ -50,6 +50,6 @@ API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (
 - Staging : https://fifa-world-cup-analysis-phep.onrender.com
 - Production : https://fifa-backend-production.onrender.com
 ### 5. Monitoring Prometheus + Grafana
-Endpoint `/metrics` ajouté au backend (prediction_requests_total, prediction_failures_total, prediction_latency_seconds, backend_healthy, backend_uptime_seconds). Reste : déployer Prometheus (scrape la prod Render) et Grafana (dashboard), documenter l'accès dans le README.
+Endpoint `/metrics` ajouté au backend. `monitoring/prometheus` (scrape la prod Render) et `monitoring/grafana` (dashboard provisionné : volume de requêtes, latence, erreurs, santé) prêts et testés en local (Grafana -> Prometheus -> vraie prod, chaîne validée). Reste : déployer les deux images sur Render et documenter l'accès dans le README.
 ### 6. Frontend Next.js
 ### 7. README final (architecture, CI/CD, promotion, reproductibilité)

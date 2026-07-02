@@ -1,0 +1,84 @@
+{
+  "title": "FIFA World Cup Backend",
+  "uid": "fifa-backend",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request volume (predictions/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "rate(prediction_requests_total[5m]) * 60",
+          "legendFormat": "requests/min"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Prediction latency (avg, seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "rate(prediction_latency_seconds_sum[5m]) / rate(prediction_latency_seconds_count[5m])",
+          "legendFormat": "avg latency"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Failed requests (rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "rate(prediction_failures_total[5m]) * 60",
+          "legendFormat": "failures/min"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Backend health status",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "backend_healthy",
+          "legendFormat": "healthy"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } },
+            { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Backend uptime",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "backend_uptime_seconds",
+          "legendFormat": "uptime (s)"
+        }
+      ]
+    }
+  ]
+}
