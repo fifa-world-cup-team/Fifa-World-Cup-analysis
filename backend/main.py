@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
+from prometheus_client import CONTENT_TYPE_LATEST
 
+from backend import metrics
 from backend.model_service import PredictionError, load_model, load_rankings, predict_match
 
 logger = logging.getLogger("backend")
@@ -39,7 +41,8 @@ class MatchRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict:
-    model_loaded = app_state.get("model") is not None
+    model_loaded = app_state.get("model") is not None and app_state.get("rankings") is not None
+    metrics.set_backend_healthy(model_loaded)
     return {
         "status": "ok" if model_loaded else "degraded",
         "model_uri": app_state.get("model_uri"),
@@ -47,21 +50,33 @@ def health() -> dict:
     }
 
 
+@app.get("/metrics")
+def metrics_endpoint() -> Response:
+    model_loaded = app_state.get("model") is not None and app_state.get("rankings") is not None
+    metrics.set_backend_healthy(model_loaded)
+    return Response(metrics.render_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.post("/predict")
 def predict(request: MatchRequest) -> dict:
+    metrics.PREDICTION_REQUESTS_TOTAL.inc()
+
     if app_state.get("model") is None or app_state.get("rankings") is None:
+        metrics.PREDICTION_FAILURES_TOTAL.inc()
         raise HTTPException(
             status_code=503,
             detail=app_state.get("error") or "Model not loaded",
         )
 
     try:
-        return predict_match(
-            app_state["model"],
-            app_state["rankings"],
-            request.home_team,
-            request.away_team,
-            request.stage,
-        )
+        with metrics.PREDICTION_LATENCY_SECONDS.time():
+            return predict_match(
+                app_state["model"],
+                app_state["rankings"],
+                request.home_team,
+                request.away_team,
+                request.stage,
+            )
     except PredictionError as error:
+        metrics.PREDICTION_FAILURES_TOTAL.inc()
         raise HTTPException(status_code=422, detail=str(error))

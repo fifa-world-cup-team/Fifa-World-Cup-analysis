@@ -100,3 +100,50 @@ def test_predict_returns_422_for_unknown_team() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_metrics_endpoint_exposes_prometheus_format() -> None:
+    client = TestClient(app)
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "prediction_requests_total" in response.text
+    assert "prediction_latency_seconds" in response.text
+    assert "prediction_failures_total" in response.text
+    assert "backend_healthy" in response.text
+    assert "backend_uptime_seconds" in response.text
+
+
+def test_predict_increments_request_counter() -> None:
+    app_state.update(
+        {
+            "model": _train_stub_model(),
+            "model_uri": "models:/fifa-world-cup-baseline/1",
+            "rankings": RANKINGS,
+            "error": None,
+        }
+    )
+    client = TestClient(app)
+
+    before = client.get("/metrics").text
+    before_count = float(
+        next(
+            line.split()[-1]
+            for line in before.splitlines()
+            if line.startswith("prediction_requests_total ")
+        )
+    )
+
+    client.post("/predict", json={"home_team": "France", "away_team": "Argentina"})
+
+    after = client.get("/metrics").text
+    after_count = float(
+        next(
+            line.split()[-1]
+            for line in after.splitlines()
+            if line.startswith("prediction_requests_total ")
+        )
+    )
+
+    assert after_count == before_count + 1
