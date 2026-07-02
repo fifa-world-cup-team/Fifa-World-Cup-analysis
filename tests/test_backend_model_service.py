@@ -1,0 +1,58 @@
+import pandas as pd
+import pytest
+
+from backend.model_service import PredictionError, build_feature_row, predict_match
+from scripts.train_baseline_model import FEATURE_COLUMNS, train_model
+
+RANKINGS = pd.DataFrame(
+    [
+        {"country": "France", "confederation": "UEFA", "rank": 3, "rank_change": -2, "fifa_points": 1870.7, "points_change": -6.6},
+        {"country": "Argentina", "confederation": "CONMEBOL", "rank": 1, "rank_change": 2, "fifa_points": 1877.3, "points_change": 2.5},
+    ]
+)
+
+
+def test_build_feature_row_computes_rank_and_points_difference() -> None:
+    row = build_feature_row("France", "Argentina", "GROUP_STAGE", RANKINGS)
+
+    assert list(row.columns) == FEATURE_COLUMNS
+    assert row.iloc[0]["home_rank"] == 3
+    assert row.iloc[0]["away_rank"] == 1
+    assert row.iloc[0]["rank_difference"] == -2
+    assert round(row.iloc[0]["points_difference"], 1) == -6.6
+
+
+def test_build_feature_row_raises_for_unknown_team() -> None:
+    with pytest.raises(PredictionError):
+        build_feature_row("Narnia", "Argentina", "GROUP_STAGE", RANKINGS)
+
+
+def test_predict_match_returns_prediction_and_probabilities() -> None:
+    def row(home_team, away_team, stage, result, home_rank, away_rank, home_points, away_points):
+        return {
+            "home_team": home_team,
+            "away_team": away_team,
+            "stage": stage,
+            "result": result,
+            "home_rank": home_rank,
+            "away_rank": away_rank,
+            "home_fifa_points": home_points,
+            "away_fifa_points": away_points,
+            "rank_difference": away_rank - home_rank,
+            "points_difference": home_points - away_points,
+        }
+
+    dataset = pd.DataFrame(
+        [
+            row("France", "Argentina", "GROUP_STAGE", "home_win", 3, 1, 1870.7, 1877.3),
+            row("Brazil", "Spain", "GROUP_STAGE", "draw", 6, 2, 1761.0, 1874.7),
+            row("Germany", "Italy", "GROUP_STAGE", "away_win", 10, 9, 1717.0, 1718.0),
+            row("France", "Brazil", "ROUND_OF_16", "home_win", 3, 6, 1870.7, 1761.0),
+        ]
+    )
+    model, _ = train_model(dataset)
+
+    result = predict_match(model, RANKINGS, "France", "Argentina", "GROUP_STAGE")
+
+    assert result["prediction"] in {"home_win", "draw", "away_win"}
+    assert abs(sum(result["probabilities"].values()) - 1) < 1e-6
