@@ -44,8 +44,8 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 
 ### 2. GitHub Actions CI/CD
 PR → dev fait (tests, dont 2 tests d'intégration + 1 e2e ajoutés). Reste : build Docker (bloqué par l'absence de backend), pipelines dev → staging et staging → main.
-### 3. ~~Backend FastAPI~~ (fait, Docker reste à faire)
-API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`, défaut `None`), et sert `/health` + `POST /predict` (home_team, away_team, stage -> prédiction + probabilités). Reste : Dockerfile + build en CI.
+### 3. ~~Backend FastAPI + Docker~~ (fait)
+API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`, défaut `None`), et sert `/health` + `POST /predict` (home_team, away_team, stage -> prédiction + probabilités). `Dockerfile` ajouté, build vérifié en local et intégré au CI (PR -> dev, sans push). Note : l'image ne contient pas encore les données DVC (`data/`) — à prévoir au déploiement (pipeline dev -> staging).
 ### 4. Monitoring Prometheus + Grafana
 ### 5. Frontend Next.js
 ### 6. Déploiement cloud
