@@ -47,28 +47,36 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-10 font-sans dark:bg-black">
-      <main className="mx-auto flex max-w-5xl flex-col gap-6">
-        <header className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
-              World Cup Predictor 2026
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Matchs, classements et pronostics en direct.
-            </p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#0d3b2a,_#06120c_60%)] pb-20 font-sans">
+      <header className="border-b border-emerald-900/40 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-8">
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">🏆</span>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                World Cup Predictor <span className="text-emerald-400">2026</span>
+              </h1>
+              <p className="text-sm text-emerald-200/80">
+                Matchs, classements et pronostics en direct — propulsé par notre modèle ML.
+              </p>
+            </div>
           </div>
           {lastUpdated && (
-            <p className="text-xs text-zinc-400">
+            <span className="flex items-center gap-2 rounded-full bg-emerald-900/60 px-3 py-1 text-xs font-medium text-emerald-200 ring-1 ring-emerald-400/30">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               Mis à jour à {lastUpdated.toLocaleTimeString("fr-FR")}
-            </p>
+            </span>
           )}
-        </header>
+        </div>
+      </header>
 
-        {loading && <p className="text-sm text-zinc-500">Chargement des données en direct...</p>}
+      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 pt-8">
+        {loading && (
+          <p className="text-sm text-emerald-100/70">Chargement des données en direct...</p>
+        )}
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+          <p className="rounded-xl bg-red-950/60 px-4 py-3 text-sm text-red-200 ring-1 ring-red-800">
             {error}
           </p>
         )}

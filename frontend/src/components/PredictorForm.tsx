@@ -18,6 +18,16 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
     return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
   }, [groups]);
 
+  const crests = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const group of groups) {
+      for (const row of group.table) {
+        map.set(row.team, row.crest);
+      }
+    }
+    return map;
+  }, [groups]);
+
   const [homeTeam, setHomeTeam] = useState(teams[0] ?? "");
   const [awayTeam, setAwayTeam] = useState(teams[1] ?? "");
   const [stage, setStage] = useState(STAGES[0]);
@@ -43,52 +53,56 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
     return null;
   }
 
+  const selectClass =
+    "w-full appearance-none rounded-xl border border-emerald-800/50 bg-emerald-950/70 px-3 py-2.5 font-medium text-emerald-50 outline-none ring-emerald-500/40 focus:ring-2";
+
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="mb-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-        Simuler un match
+    <section className="rounded-2xl border border-emerald-800/40 bg-emerald-950/40 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
+      <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-emerald-50">
+        🎮 Simuler un match
       </h2>
-      <p className="mb-4 text-sm text-zinc-500">
+      <p className="mb-4 text-sm text-emerald-200/50">
         Choisis deux équipes qualifiées pour voir ce que prédit le modèle.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Équipe 1
-          <select
-            value={homeTeam}
-            onChange={(e) => setHomeTeam(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-          >
-            {teams.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </label>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
+          <div className="flex w-full items-center gap-2 sm:w-2/5">
+            {crests.get(homeTeam) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={crests.get(homeTeam)!} alt="" className="h-8 w-8 shrink-0 object-contain" />
+            )}
+            <select value={homeTeam} onChange={(e) => setHomeTeam(e.target.value)} className={selectClass}>
+              {teams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Équipe 2
-          <select
-            value={awayTeam}
-            onChange={(e) => setAwayTeam(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-          >
-            {teams.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </label>
+          <span className="shrink-0 text-sm font-bold text-amber-400">VS</span>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Stade
+          <div className="flex w-full items-center gap-2 sm:w-2/5">
+            {crests.get(awayTeam) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={crests.get(awayTeam)!} alt="" className="h-8 w-8 shrink-0 object-contain" />
+            )}
+            <select value={awayTeam} onChange={(e) => setAwayTeam(e.target.value)} className={selectClass}>
+              {teams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={stage}
             onChange={(e) => setStage(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+            className="rounded-xl border border-emerald-800/50 bg-emerald-950/70 px-3 py-2 text-sm text-emerald-50 outline-none ring-emerald-500/40 focus:ring-2"
           >
             {STAGES.map((s) => (
               <option key={s} value={s}>
@@ -96,23 +110,25 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
               </option>
             ))}
           </select>
-        </label>
 
-        <button
-          type="submit"
-          disabled={loading || homeTeam === awayTeam}
-          className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
-        >
-          {loading ? "..." : "Prédire"}
-        </button>
+          <button
+            type="submit"
+            disabled={loading || homeTeam === awayTeam}
+            className="rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "..." : "⚡ Prédire"}
+          </button>
+        </div>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
 
       {result && (
-        <div className="mt-4 rounded-lg bg-zinc-100 px-4 py-3 text-sm dark:bg-zinc-800">
-          <strong>{resultLabel(result.prediction, homeTeam, awayTeam)}</strong>
-          <ul className="mt-1 flex gap-4 text-zinc-600 dark:text-zinc-400">
+        <div className="mt-4 rounded-xl bg-emerald-900/40 px-4 py-3 text-sm ring-1 ring-emerald-700/40">
+          <strong className="text-emerald-200">
+            {resultLabel(result.prediction, homeTeam, awayTeam)}
+          </strong>
+          <ul className="mt-1 flex flex-wrap gap-4 text-emerald-100/70">
             {probabilityLabels(result.probabilities, homeTeam, awayTeam).map(({ label, value }) => (
               <li key={label}>
                 {label}: {(value * 100).toFixed(1)}%
