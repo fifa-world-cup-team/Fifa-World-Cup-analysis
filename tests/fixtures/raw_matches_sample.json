@@ -1,0 +1,64 @@
+{
+  "matches": [
+    {
+      "id": 101,
+      "utcDate": "2026-06-11T19:00:00Z",
+      "status": "FINISHED",
+      "stage": "GROUP_STAGE",
+      "group": "GROUP_A",
+      "homeTeam": {"name": "France"},
+      "awayTeam": {"name": "Argentina"},
+      "score": {"fullTime": {"home": 2, "away": 1}}
+    },
+    {
+      "id": 102,
+      "utcDate": "2026-06-12T19:00:00Z",
+      "status": "FINISHED",
+      "stage": "GROUP_STAGE",
+      "group": "GROUP_B",
+      "homeTeam": {"name": "Brazil"},
+      "awayTeam": {"name": "Spain"},
+      "score": {"fullTime": {"home": 1, "away": 1}}
+    },
+    {
+      "id": 103,
+      "utcDate": "2026-06-13T19:00:00Z",
+      "status": "FINISHED",
+      "stage": "ROUND_OF_16",
+      "group": null,
+      "homeTeam": {"name": "Spain"},
+      "awayTeam": {"name": "France"},
+      "score": {"fullTime": {"home": 0, "away": 2}}
+    },
+    {
+      "id": 104,
+      "utcDate": "2026-06-20T19:00:00Z",
+      "status": "SCHEDULED",
+      "stage": "QUARTER_FINALS",
+      "group": null,
+      "homeTeam": {"name": "Argentina"},
+      "awayTeam": {"name": "Brazil"},
+      "score": {"fullTime": {"home": null, "away": null}}
+    },
+    {
+      "id": 105,
+      "utcDate": "2026-06-21T19:00:00Z",
+      "status": "FINISHED",
+      "stage": "QUARTER_FINALS",
+      "group": null,
+      "homeTeam": {"name": "Argentina"},
+      "awayTeam": {"name": "Brazil"},
+      "score": {"fullTime": {"home": 3, "away": 0}}
+    },
+    {
+      "id": 106,
+      "utcDate": "2026-06-25T19:00:00Z",
+      "status": "FINISHED",
+      "stage": "SEMI_FINALS",
+      "group": null,
+      "homeTeam": {"name": "France"},
+      "awayTeam": {"name": "Spain"},
+      "score": {"fullTime": {"home": 1, "away": 0}}
+    }
+  ]
+}

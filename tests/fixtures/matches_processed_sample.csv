@@ -1,0 +1,6 @@
+match_id,date,status,stage,group,home_team,away_team,home_goals,away_goals,result
+101,2026-06-11T19:00:00Z,FINISHED,GROUP_STAGE,GROUP_A,France,Argentina,2,1,home_win
+102,2026-06-12T19:00:00Z,FINISHED,GROUP_STAGE,GROUP_B,Brazil,Spain,1,1,draw
+103,2026-06-13T19:00:00Z,FINISHED,ROUND_OF_16,,Spain,France,0,2,away_win
+105,2026-06-21T19:00:00Z,FINISHED,QUARTER_FINALS,,Argentina,Brazil,3,0,home_win
+106,2026-06-25T19:00:00Z,FINISHED,SEMI_FINALS,,France,Spain,1,0,home_win
