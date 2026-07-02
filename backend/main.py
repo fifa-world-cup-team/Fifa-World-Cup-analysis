@@ -1,11 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
+import requests
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import CONTENT_TYPE_LATEST
 
-from backend import metrics
+from backend import football_data, metrics
 from backend.model_service import PredictionError, load_model, load_rankings, predict_match
 
 logger = logging.getLogger("backend")
@@ -55,6 +56,22 @@ def metrics_endpoint() -> Response:
     model_loaded = app_state.get("model") is not None and app_state.get("rankings") is not None
     metrics.set_backend_healthy(model_loaded)
     return Response(metrics.render_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+@app.get("/matches")
+def matches() -> list[dict]:
+    try:
+        return football_data.get_matches()
+    except (RuntimeError, requests.RequestException) as error:
+        raise HTTPException(status_code=502, detail=str(error))
+
+
+@app.get("/standings")
+def standings() -> list[dict]:
+    try:
+        return football_data.get_standings()
+    except (RuntimeError, requests.RequestException) as error:
+        raise HTTPException(status_code=502, detail=str(error))
 
 
 @app.post("/predict")
