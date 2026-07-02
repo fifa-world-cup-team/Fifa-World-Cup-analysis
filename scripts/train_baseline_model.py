@@ -1,7 +1,11 @@
+import os
+import subprocess
 import sys
 from pathlib import Path
 
 import joblib
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
@@ -13,7 +17,11 @@ from sklearn.preprocessing import OneHotEncoder
 
 
 DATASET_PATH = Path("data/processed/training_matches.csv")
+DVC_POINTER_PATH = Path("data/processed/training_matches.csv.dvc")
 MODEL_PATH = Path("models/baseline_model.joblib")
+ENV_PATH = Path(".env")
+EXPERIMENT_NAME = "fifa-world-cup-baseline"
+REGISTERED_MODEL_NAME = "fifa-world-cup-baseline"
 CATEGORICAL_FEATURE_COLUMNS = ["home_team", "away_team", "stage"]
 NUMERIC_FEATURE_COLUMNS = [
     "rank_difference",
@@ -26,6 +34,42 @@ NUMERIC_FEATURE_COLUMNS = [
 FEATURE_COLUMNS = [*CATEGORICAL_FEATURE_COLUMNS, *NUMERIC_FEATURE_COLUMNS]
 TARGET_COLUMN = "result"
 RANDOM_STATE = 42
+
+
+def load_env_file(env_path: Path = ENV_PATH) -> None:
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        clean_line = line.strip()
+        if not clean_line or clean_line.startswith("#") or "=" not in clean_line:
+            continue
+
+        name, value = clean_line.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip('"').strip("'"))
+
+
+def get_git_commit_hash() -> str:
+    try:
+        return (
+            subprocess.check_output(["git", "rev-parse", "HEAD"])
+            .decode()
+            .strip()
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown"
+
+
+def get_dvc_data_version(dvc_pointer_path: Path = DVC_POINTER_PATH) -> str:
+    if not dvc_pointer_path.exists():
+        return "unknown"
+
+    for line in dvc_pointer_path.read_text(encoding="utf-8").splitlines():
+        clean_line = line.strip().lstrip("- ").strip()
+        if clean_line.startswith("md5:"):
+            return clean_line.split(":", 1)[1].strip()
+
+    return "unknown"
 
 
 def load_dataset(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
@@ -108,8 +152,29 @@ def save_model(model: Pipeline, model_path: Path = MODEL_PATH) -> None:
 
 
 def main() -> None:
+    load_env_file()
     dataset = load_dataset()
-    model, accuracy = train_model(dataset)
+
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+    if tracking_uri:
+        mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(EXPERIMENT_NAME)
+
+    with mlflow.start_run():
+        model, accuracy = train_model(dataset)
+
+        mlflow.log_param("model_type", "LogisticRegression")
+        mlflow.log_param("categorical_features", ",".join(CATEGORICAL_FEATURE_COLUMNS))
+        mlflow.log_param("numeric_features", ",".join(NUMERIC_FEATURE_COLUMNS))
+        mlflow.log_param("git_commit", get_git_commit_hash())
+        mlflow.log_param("dvc_data_version", get_dvc_data_version())
+        mlflow.log_metric("accuracy", accuracy)
+
+        log_model_kwargs = {"artifact_path": "model"}
+        if tracking_uri:
+            log_model_kwargs["registered_model_name"] = REGISTERED_MODEL_NAME
+        mlflow.sklearn.log_model(model, **log_model_kwargs)
+
     save_model(model)
 
     print(f"Trained baseline model on {len(dataset)} matches")

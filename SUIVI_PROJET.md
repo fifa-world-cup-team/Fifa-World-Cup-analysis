@@ -12,7 +12,8 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 |---|---|---|
 | feature/fix-gitignore | Fix du .gitignore qui bloquait git add | Diaby |
 | feature/strengthen-tests | 4 tests solides + pytest.ini | Diaby |
-| feature/mlflow-integration | Tracking MLflow dans le script d'entraînement | Diaby |
+| feature/mlflow-integration | Ajout de la dépendance mlflow (tracking pas encore implémenté à ce stade) | Diaby |
+| feature/mlflow-tracking-real | Vrai tracking MLflow (run, params, métriques, registry) + traçabilité commit Git/version DVC, testé en direct sur DagsHub | Diaby |
 | feature/dvc-setup | Versioning des données avec DVC + stockage DagsHub | Diaby |
 | feature/baseline-model | Script d'entraînement du modèle (LogisticRegression) | Adrien |
 | feature/data-tests | Tests basiques preprocessing + train | Ilyesse |
