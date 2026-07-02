@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import pandas as pd
 
-from scripts.train_baseline_model import train_model
+from scripts.train_baseline_model import get_dvc_data_version, train_model
 
 
 def test_train_model_returns_model_and_accuracy() -> None:
@@ -48,3 +50,19 @@ def test_train_model_returns_model_and_accuracy() -> None:
 
     assert hasattr(model, "predict")
     assert 0 <= accuracy <= 1
+
+
+def test_get_dvc_data_version_reads_md5_from_pointer_file(tmp_path: Path) -> None:
+    dvc_pointer = tmp_path / "training_matches.csv.dvc"
+    dvc_pointer.write_text(
+        "outs:\n- md5: c2845b97dbdd731141764def7ab8fec2\n  size: 15540\n",
+        encoding="utf-8",
+    )
+
+    assert get_dvc_data_version(dvc_pointer) == "c2845b97dbdd731141764def7ab8fec2"
+
+
+def test_get_dvc_data_version_returns_unknown_when_pointer_missing(
+    tmp_path: Path,
+) -> None:
+    assert get_dvc_data_version(tmp_path / "missing.dvc") == "unknown"
