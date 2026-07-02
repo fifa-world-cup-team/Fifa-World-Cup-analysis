@@ -23,3 +23,6 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+      - name: Build Docker image (no push)
+        run: docker build -t fifa-world-cup-backend:${{ github.sha }} .
