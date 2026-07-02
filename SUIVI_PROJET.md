@@ -19,6 +19,17 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | feature/data-tests | Tests basiques preprocessing + train | Ilyesse |
 | feature/fifa-ranking-api | Ingestion du classement FIFA via RapidAPI pour enrichir les features | Adrien |
 | feature/project-tracking | Workflow GitHub Actions CI (tests pytest sur PR vers dev) | Diaby |
+| feature/docker-backend | Dockerfile backend + build Docker en CI | Diaby |
+| feature/model-promotion-pipeline | Pipeline de promotion (candidat -> Staging -> Production, quality gate) | Diaby |
+| feature/docker-dvc-pull | Le conteneur récupère les données via DVC à son démarrage | Diaby |
+| feature/backend-api | Backend FastAPI qui sert les prédictions depuis le registry MLflow | Diaby |
+| feature/prometheus-metrics | Endpoint `/metrics` | Diaby |
+| feature/prometheus-grafana | Déploiement Prometheus + Grafana | Diaby |
+| feature/readme-final | README final + premier frontend Next.js | Diaby |
+| fix/cors | Fix CORS (le frontend ne pouvait pas du tout appeler l'API) | Diaby |
+| feature/live-matches-standings | Reconstruction du frontend en vrai dashboard (matchs live, classements, simulation du vainqueur) | Diaby |
+| fix/ui-team-names-and-refresh | Fix noms d'équipes (plus de "domicile/extérieur") + refonte visuelle complète | Diaby |
+| fix/disable-static-cache | Fix cache CDN d'1 an qui servait une page périmée sur Render | Diaby |
 
 ---
 
@@ -32,8 +43,8 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | Dataset ML ranking | `data/processed/fifa_rankings_current.csv` |
 | Dataset d'entraînement enrichi | `data/processed/training_matches.csv` |
 | Git | Le JSON généré est ignoré par Git |
-| Tests | 13 tests passent |
-| Modèle baseline enrichi | Accuracy locale: 0.643 |
+| Tests | 38 tests passent (unit + intégration + e2e + tournoi + football_data) |
+| Modèle baseline enrichi | Accuracy locale: 0.643 (dernier run staging: 0.579, versionné dans MLflow) |
 
 ---
 
@@ -54,14 +65,20 @@ Endpoint `/metrics` sur le backend, déployés sur Render : Prometheus (https://
 ### 6. ~~Frontend Next.js~~ (v2, vrai dashboard)
 Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que l'équipe voulait. Reconstruit en vrai dashboard :
 - `GET /matches` et `GET /standings` (backend) : proxy en cache (60s) de l'API football-data.org, vraies données de la Coupe du Monde 2026 en cours (104 matchs, 12 groupes)
-- Frontend : tableau des matchs à venir avec prédiction par match (bouton), derniers résultats, classements par groupe avec écussons, + simulateur libre (2 équipes au choix)
-- Rafraîchissement automatique toutes les 60s
+- Frontend : tableau des matchs à venir avec prédiction par match (bouton), derniers résultats, classements par groupe avec écussons, + simulateur libre (2 équipes au choix, sans label "domicile/extérieur" ni "équipe 1/2" — juste les vrais noms/écussons)
+- Rafraîchissement automatique toutes les 60s (matchs, classements, et simulation du vainqueur)
 - `GET /tournament` (backend) : simule tout le bracket à élimination directe (32èmes -> finale) avec notre modèle pour les tours pas encore joués, et les vrais résultats pour ceux déjà joués. Les cases encore "à déterminer" côté API sont remplies en enchaînant les vainqueurs/perdants dans l'ordre chronologique (approximation assumée et affichée, pas un vrai tirage FIFA). Retourne un vainqueur final prédit. Testé (y compris un test qui reproduit un bug trouvé : une équipe réutilisée deux fois dans le même tour, corrigé).
-- Fix CORS au passage (le premier frontend déployé ne marchait pas du tout, bloqué silencieusement par le navigateur)
+- Refonte visuelle complète (thème sombre "terrain de foot", badges de statut, écussons, carte vainqueur)
+- Fix CORS (le premier frontend déployé ne pouvait pas du tout appeler l'API, bloqué silencieusement par le navigateur)
+- Fix cache CDN (Next.js gardait la page en cache 1 an sur Render après chaque déploiement)
+
+**Point ouvert** : le rendu visuel final (une fois JS exécuté dans un vrai navigateur) n'a pas pu être vérifié par l'assistant — pas d'accès navigateur, seulement `curl` (qui ne voit que le squelette HTML de chargement, le contenu réel est injecté par React côté client). À valider par l'équipe directement sur https://fifa-frontend-7be5.onrender.com
 ### 7. ~~README final~~ (fait)
 Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.
 
 ---
 
 ## Projet complet
-Toutes les exigences du cahier des charges sont couvertes : branching model, 3 pipelines CI/CD (testés en conditions réelles), tests (unit/intégration/e2e), DVC, MLflow (tracking + registry + promotion), backend Dockerisé, monitoring Prometheus/Grafana, frontend (dashboard temps réel), déploiement cloud, README. Reste : présentation en classe.
+Toutes les exigences du cahier des charges sont couvertes : branching model, 3 pipelines CI/CD (testés en conditions réelles), tests (unit/intégration/e2e), DVC, MLflow (tracking + registry + promotion), backend Dockerisé, monitoring Prometheus/Grafana, frontend (dashboard temps réel avec matchs/classements/prédictions/simulation du vainqueur), déploiement cloud, README.
+
+Reste : présentation en classe, + valider visuellement le rendu final du frontend (point ouvert ci-dessus).
