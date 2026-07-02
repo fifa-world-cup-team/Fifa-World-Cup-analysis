@@ -6,10 +6,11 @@ __pycache__/
 *.pyc
 .pytest_cache
 tests/
-data/
 models/
 docs/
-.dvc/
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
 .env
 *.md
 *.pdf

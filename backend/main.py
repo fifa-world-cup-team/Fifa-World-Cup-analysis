@@ -14,15 +14,17 @@ app_state: dict = {"model": None, "model_uri": None, "rankings": None, "error": 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        model, model_uri = load_model()
-        rankings = load_rankings()
-        app_state["model"] = model
-        app_state["model_uri"] = model_uri
-        app_state["rankings"] = rankings
-        app_state["error"] = None
+        app_state["model"], app_state["model_uri"] = load_model()
     except PredictionError as error:
         logger.warning("Model not loaded at startup: %s", error)
         app_state["error"] = str(error)
+
+    try:
+        app_state["rankings"] = load_rankings()
+    except PredictionError as error:
+        logger.warning("Rankings not loaded at startup: %s", error)
+        app_state["error"] = str(error)
+
     yield
 
 
@@ -47,7 +49,7 @@ def health() -> dict:
 
 @app.post("/predict")
 def predict(request: MatchRequest) -> dict:
-    if app_state.get("model") is None:
+    if app_state.get("model") is None or app_state.get("rankings") is None:
         raise HTTPException(
             status_code=503,
             detail=app_state.get("error") or "Model not loaded",
