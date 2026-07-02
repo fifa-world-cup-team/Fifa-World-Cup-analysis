@@ -42,7 +42,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 `fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
 ### 2. GitHub Actions CI/CD
-PR → dev fait (tests). Reste : build Docker (bloqué par l'absence de backend), tests d'intégration et e2e, pipelines dev → staging et staging → main.
+PR → dev fait (tests, dont 2 tests d'intégration + 1 e2e ajoutés). Reste : build Docker (bloqué par l'absence de backend), pipelines dev → staging et staging → main.
 ### 3. Backend FastAPI + Docker
 ### 4. Monitoring Prometheus + Grafana
 ### 5. Frontend Next.js
