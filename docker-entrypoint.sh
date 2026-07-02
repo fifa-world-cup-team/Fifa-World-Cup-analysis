@@ -2,6 +2,9 @@
 set -e
 
 if [ -n "$DAGSHUB_USERNAME" ] && [ -n "$DAGSHUB_TOKEN" ]; then
+  if [ ! -d .git ]; then
+    git init -q
+  fi
   mkdir -p .dvc
   cat > .dvc/config.local <<CONFIG
 ['remote "dagshub"']
