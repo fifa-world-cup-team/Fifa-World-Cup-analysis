@@ -51,12 +51,17 @@ API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (
 - Production : https://fifa-backend-production.onrender.com
 ### 5. ~~Monitoring Prometheus + Grafana~~ (fait)
 Endpoint `/metrics` sur le backend, déployés sur Render : Prometheus (https://fifa-prometheus.onrender.com, scrape la prod toutes les 30s) et Grafana (https://fifa-graphana.onrender.com, dashboard "FIFA World Cup Backend" provisionné automatiquement). Chaîne vérifiée en direct.
-### 6. ~~Frontend Next.js~~ (fait)
-App (`frontend/`) avec formulaire de prédiction (2 équipes + stade) qui appelle l'API de production. Déployée sur Render : https://fifa-frontend-7be5.onrender.com
+### 6. ~~Frontend Next.js~~ (v2, vrai dashboard)
+Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que l'équipe voulait. Reconstruit en vrai dashboard :
+- `GET /matches` et `GET /standings` (backend) : proxy en cache (60s) de l'API football-data.org, vraies données de la Coupe du Monde 2026 en cours (104 matchs, 12 groupes)
+- Frontend : tableau des matchs à venir avec prédiction par match (bouton), derniers résultats, classements par groupe avec écussons, + simulateur libre (2 équipes au choix)
+- Rafraîchissement automatique toutes les 60s
+- Limite connue : les tours après les 32èmes contiennent encore des cases "à déterminer" (l'API ne remplit les équipes qu'une fois les tours précédents joués) — pas de bracket simulé inventé, ça se remplit tout seul au fil du tournoi
+- Fix CORS au passage (le premier frontend déployé ne marchait pas du tout, bloqué silencieusement par le navigateur)
 ### 7. ~~README final~~ (fait)
 Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.
 
 ---
 
 ## Projet complet
-Toutes les exigences du cahier des charges sont couvertes : branching model, 3 pipelines CI/CD (testés en conditions réelles), tests (unit/intégration/e2e), DVC, MLflow (tracking + registry + promotion), backend Dockerisé, monitoring Prometheus/Grafana, frontend, déploiement cloud, README. Reste : présentation en classe.
+Toutes les exigences du cahier des charges sont couvertes : branching model, 3 pipelines CI/CD (testés en conditions réelles), tests (unit/intégration/e2e), DVC, MLflow (tracking + registry + promotion), backend Dockerisé, monitoring Prometheus/Grafana, frontend (dashboard temps réel), déploiement cloud, README. Reste : présentation en classe.
