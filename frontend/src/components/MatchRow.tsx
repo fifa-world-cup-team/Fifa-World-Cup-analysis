@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { fetchPrediction, RESULT_LABELS, type Match, type Prediction } from "@/lib/api";
+import { fetchPrediction, probabilityLabels, resultLabel, type Match, type Prediction } from "@/lib/api";
 import { TeamBadge } from "./TeamBadge";
 
 function formatDate(isoDate: string): string {
@@ -67,14 +67,18 @@ export function MatchRow({ match }: { match: Match }) {
 
           {error && <span className="text-red-600 dark:text-red-400">{error}</span>}
 
-          {prediction && (
+          {prediction && match.home_team && match.away_team && (
             <span className="flex gap-2 text-zinc-600 dark:text-zinc-400">
-              <strong>{RESULT_LABELS[prediction.prediction] ?? prediction.prediction}</strong>
-              {Object.entries(prediction.probabilities).map(([label, value]) => (
-                <span key={label}>
-                  {RESULT_LABELS[label] ?? label}: {(value * 100).toFixed(0)}%
-                </span>
-              ))}
+              <strong>
+                {resultLabel(prediction.prediction, match.home_team.name, match.away_team.name)}
+              </strong>
+              {probabilityLabels(prediction.probabilities, match.home_team.name, match.away_team.name).map(
+                ({ label, value }) => (
+                  <span key={label}>
+                    {label}: {(value * 100).toFixed(0)}%
+                  </span>
+                ),
+              )}
             </span>
           )}
         </div>

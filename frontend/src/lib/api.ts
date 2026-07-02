@@ -71,11 +71,25 @@ export const STAGE_LABELS: Record<string, string> = {
   FINAL: "Finale",
 };
 
-export const RESULT_LABELS: Record<string, string> = {
-  home_win: "Victoire domicile",
-  draw: "Match nul",
-  away_win: "Victoire extérieur",
-};
+// "home"/"away" only reflect football-data.org's listing order for a given
+// fixture, not a real home-advantage (World Cup matches are on neutral
+// ground). Always resolve these labels to the actual team names in the UI.
+export function resultLabel(result: string, homeTeam: string, awayTeam: string): string {
+  if (result === "home_win") return `Victoire ${homeTeam}`;
+  if (result === "away_win") return `Victoire ${awayTeam}`;
+  return "Match nul";
+}
+
+export function probabilityLabels(
+  probabilities: Record<string, number>,
+  homeTeam: string,
+  awayTeam: string,
+): { label: string; value: number }[] {
+  return Object.entries(probabilities).map(([result, value]) => ({
+    label: resultLabel(result, homeTeam, awayTeam),
+    value,
+  }));
+}
 
 export async function fetchMatches(): Promise<Match[]> {
   const response = await fetch(`${API_URL}/matches`);

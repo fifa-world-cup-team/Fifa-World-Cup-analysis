@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { fetchPrediction, RESULT_LABELS, type GroupStanding, type Prediction } from "@/lib/api";
+import { fetchPrediction, probabilityLabels, resultLabel, type GroupStanding, type Prediction } from "@/lib/api";
 
 const STAGES = [
   "GROUP_STAGE",
@@ -54,7 +54,7 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Domicile
+          Équipe 1
           <select
             value={homeTeam}
             onChange={(e) => setHomeTeam(e.target.value)}
@@ -69,7 +69,7 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
         </label>
 
         <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Extérieur
+          Équipe 2
           <select
             value={awayTeam}
             onChange={(e) => setAwayTeam(e.target.value)}
@@ -111,11 +111,11 @@ export function PredictorForm({ groups }: { groups: GroupStanding[] }) {
 
       {result && (
         <div className="mt-4 rounded-lg bg-zinc-100 px-4 py-3 text-sm dark:bg-zinc-800">
-          <strong>{RESULT_LABELS[result.prediction] ?? result.prediction}</strong>
+          <strong>{resultLabel(result.prediction, homeTeam, awayTeam)}</strong>
           <ul className="mt-1 flex gap-4 text-zinc-600 dark:text-zinc-400">
-            {Object.entries(result.probabilities).map(([label, value]) => (
+            {probabilityLabels(result.probabilities, homeTeam, awayTeam).map(({ label, value }) => (
               <li key={label}>
-                {RESULT_LABELS[label] ?? label}: {(value * 100).toFixed(1)}%
+                {label}: {(value * 100).toFixed(1)}%
               </li>
             ))}
           </ul>

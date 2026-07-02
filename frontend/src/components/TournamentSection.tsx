@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { fetchTournament, STAGE_LABELS, type TournamentResult } from "@/lib/api";
 
+const REFRESH_INTERVAL_MS = 60_000;
+
 export function TournamentSection() {
   const [data, setData] = useState<TournamentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -10,15 +12,25 @@ export function TournamentSection() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchTournament()
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Erreur inconnue.");
-      });
+
+    function load() {
+      fetchTournament()
+        .then((result) => {
+          if (!cancelled) {
+            setData(result);
+            setError(null);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) setError(err instanceof Error ? err.message : "Erreur inconnue.");
+        });
+    }
+
+    load();
+    const interval = setInterval(load, REFRESH_INTERVAL_MS);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 
