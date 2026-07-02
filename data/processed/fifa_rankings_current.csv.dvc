@@ -1,0 +1,5 @@
+outs:
+- md5: 8407bd05a55facec1f5e450bcd32b67f
+  size: 18774
+  hash: md5
+  path: fifa_rankings_current.csv

@@ -38,8 +38,8 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 
 ## Ce qui reste à faire ?
 
-### 1. Versionner le nouveau dataset avec DVC
-Ajouter `data/processed/training_matches.csv` à DVC après validation de la PR.
+### 1. ~~Versionner le nouveau dataset avec DVC~~ (fait)
+`fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
 ### 2. GitHub Actions CI/CD
 PR → dev fait (tests). Reste : build Docker (bloqué par l'absence de backend), tests d'intégration et e2e, pipelines dev → staging et staging → main.
