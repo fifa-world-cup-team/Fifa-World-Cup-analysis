@@ -1,174 +1,202 @@
 # World Cup Predictor 2026
 
-Projet MLOps simple autour de la Coupe du Monde 2026.
+Projet MLOps autour de la Coupe du Monde 2026 : une API qui prédit le résultat
+d'un match de football entre deux équipes (victoire domicile / nul / victoire
+extérieur), avec le cycle de vie MLOps complet (versioning des données,
+tracking et registre de modèles, CI/CD avec quality gates, déploiements
+reproductibles, monitoring).
 
-L'objectif est de construire progressivement une application web capable de
-predire le resultat d'un match de football entre deux equipes.
+## Déploiements en ligne
 
-## Idee du projet
+| Environnement | URL |
+|---|---|
+| API - staging | https://fifa-world-cup-analysis-phep.onrender.com |
+| API - production | https://fifa-backend-production.onrender.com |
+| Monitoring - Prometheus | https://fifa-prometheus.onrender.com |
+| Monitoring - Grafana | https://fifa-graphana.onrender.com |
 
-L'utilisateur choisit deux equipes, par exemple:
+Exemple d'appel à l'API de production :
 
-```text
-France vs Argentina
+```bash
+curl -X POST https://fifa-backend-production.onrender.com/predict \
+  -H "Content-Type: application/json" \
+  -d '{"home_team": "France", "away_team": "Argentina", "stage": "GROUP_STAGE"}'
 ```
 
-L'application devra retourner:
+## Architecture
 
-- probabilite de victoire de l'equipe a domicile
-- probabilite de match nul
-- probabilite de victoire de l'equipe exterieure
-- score probable
-- plus tard, simulation du tournoi
+```mermaid
+flowchart LR
+    subgraph Data["Data (DVC + DagsHub remote)"]
+        RAW[RapidAPI / football-data.org] --> ING[scripts/ingest_*.py]
+        ING --> DATA[data/ versionne avec DVC]
+    end
 
-## Objectif Machine Learning
+    subgraph Train["Entrainement"]
+        DATA --> TRAIN[scripts/train_baseline_model.py]
+        TRAIN --> MLFLOW[MLflow Tracking + Model Registry sur DagsHub]
+    end
 
-Pour commencer simplement, le modele sera un probleme de classification a 3
-classes:
+    subgraph Serve["Backend"]
+        MLFLOW --> API[FastAPI: /predict /health /metrics]
+    end
 
-- `home_win`
-- `draw`
-- `away_win`
+    API --> FRONT[Frontend Next.js]
 
-Les premieres features prevues:
+    subgraph Monitor["Monitoring"]
+        API --> PROM[Prometheus]
+        PROM --> GRAF[Grafana]
+    end
 
-- rating Elo des equipes
-- forme recente
-- confrontations directes
-- buts marques et encaisses en moyenne
+    subgraph CICD["CI/CD - GitHub Actions"]
+        PR["PR -> dev\ntests + build Docker"] --> STG["push -> staging\nentrainement candidat + quality gate + promotion"]
+        STG --> PROD["push -> main\nverification + deploiement prod"]
+    end
+```
 
-Le score exact et la simulation du tournoi seront derives plus tard a partir des
-probabilites du meme modele.
+## Stack
 
-## Stack prevue
+- **Backend** : FastAPI, servi par Uvicorn, packagé en Docker
+- **Frontend** : Next.js
+- **Data versioning** : DVC, remote DagsHub
+- **Model tracking & registry** : MLflow (serveur hébergé par DagsHub)
+- **Monitoring** : Prometheus + Grafana
+- **Déploiement** : Render (Docker, un service par environnement)
+- **CI/CD** : GitHub Actions
 
-- Backend: FastAPI
-- Frontend: Next.js
-- Data versioning: DVC
-- Model tracking et registry: MLflow avec DagsHub
-- Database: Supabase Postgres
-- Monitoring: Prometheus et Grafana
-- Deployment: Render
-- CI/CD: GitHub Actions
-
-## Strategie Git
-
-Le projet doit respecter ce modele de branches:
+## Stratégie Git
 
 ```text
 feature/* -> dev -> staging -> main
 ```
 
-- `feature/*`: developpement de chaque membre
-- `dev`: integration du travail de l'equipe
-- `staging`: validation pre-production
-- `main`: production
+- `feature/*` : développement individuel
+- `dev` : intégration de l'équipe
+- `staging` : validation pré-production
+- `main` : production
 
-Personne ne travaille directement sur `dev`, `staging` ou `main`.
+Personne ne travaille directement sur `dev`, `staging` ou `main` : tout passe
+par une Pull Request.
 
-## Repartition initiale
+## Pipelines CI/CD
 
-- Data / ML: donnees, features, modele, DVC, MLflow
-- Backend / API: FastAPI, endpoints, connexion au modele et a Supabase
-- Frontend / DevOps: interface Next.js, Docker, CI/CD, Render, monitoring
+Trois workflows GitHub Actions, un par transition de branche :
 
-Voir le fichier `docs/team-tasks.md` pour plus de details.
+### 1. `PR -> dev` ([.github/workflows/pr-dev.yml](.github/workflows/pr-dev.yml))
+Déclenché sur toute Pull Request vers `dev`. Étapes : installation des
+dépendances, tests unitaires + intégration + end-to-end (`pytest`), build de
+l'image Docker du backend (sans la publier).
 
-## Mise a jour des donnees
+### 2. `dev -> staging` ([.github/workflows/dev-to-staging.yml](.github/workflows/dev-to-staging.yml))
+Déclenché sur push vers `staging` (fusion d'une PR validée). C'est le
+**pipeline de promotion de modèle** :
+1. Suite de tests complète
+2. `dvc pull` pour récupérer la dernière version des données
+3. Entraînement d'un modèle candidat (`scripts/train_baseline_model.py`),
+   enregistré dans le MLflow Model Registry avec ses métriques, le hash du
+   commit Git et la version DVC des données utilisées
+4. `scripts/promote_model.py` : le candidat est passé au stage `Staging`,
+   puis promu au stage `Production` si son accuracy dépasse le seuil de
+   qualité (`QUALITY_GATE_MIN_ACCURACY`, 0.5 par défaut) — sinon il reste en
+   `Staging` et la production n'est pas modifiée
+5. Déclenchement du redéploiement du service Render de staging
 
-Les donnees brutes ne se mettent pas a jour automatiquement.
+### 3. `staging -> main` ([.github/workflows/staging-to-main.yml](.github/workflows/staging-to-main.yml))
+Déclenché sur push vers `main`. Vérifie qu'une version du modèle est bien au
+stage `Production` (`scripts/verify_production_model.py` — si aucune version
+n'a passé le gate, le déploiement est bloqué), relance la suite de tests, puis
+déclenche le redéploiement du service Render de production.
 
-Pour actualiser les matchs depuis l'API puis regenerer le fichier traite:
+## Modèle de promotion
 
-```powershell
-python scripts/update_data.py
+Le [MLflow Model Registry](https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis)
+hébergé sur DagsHub est la **source de vérité** pour les déploiements : le
+backend charge toujours son modèle depuis le registre (`models:/fifa-world-cup-baseline/<stage>`),
+jamais depuis un fichier local. Le stage chargé est configurable via la
+variable d'environnement `MODEL_STAGE` (`Staging` sur l'environnement de
+staging, `Production` sur l'environnement de production).
+
+Chaque version enregistrée trace :
+- ses métriques (accuracy)
+- ses paramètres (type de modèle, colonnes de features)
+- la version des données DVC utilisée pour l'entraîner
+- le hash du commit Git correspondant
+
+## Monitoring
+
+Le backend de production expose `/metrics` au format Prometheus :
+`prediction_requests_total`, `prediction_failures_total`,
+`prediction_latency_seconds`, `backend_healthy`, `backend_uptime_seconds`.
+
+- **Prometheus** (https://fifa-prometheus.onrender.com) scrape cette route
+  toutes les 30 secondes (config : [monitoring/prometheus/prometheus.yml](monitoring/prometheus/prometheus.yml))
+- **Grafana** (https://fifa-graphana.onrender.com) affiche le dashboard
+  "FIFA World Cup Backend" (provisionné automatiquement, voir
+  [monitoring/grafana/provisioning](monitoring/grafana/provisioning)) : volume
+  de requêtes, latence des prédictions, taux d'erreur, statut de santé.
+  Connexion : utilisateur `admin`, mot de passe défini via la variable
+  d'environnement `GF_SECURITY_ADMIN_PASSWORD` du service Render.
+
+## Reproductibilité / installation locale
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # ou .venv\Scripts\activate sous Windows
+pip install -r requirements.txt
+cp .env.example .env  # puis remplir les valeurs (voir ci-dessous)
 ```
 
-Cette commande cree localement:
+Variables d'environnement nécessaires dans `.env` :
 
-```text
-data/raw/worldcup_matches.json
-data/processed/matches_processed.csv
+| Variable | Usage |
+|---|---|
+| `WORLD_FOOTBALL_RANKING_API_KEY` | clé RapidAPI pour récupérer le classement FIFA |
+| `MLFLOW_TRACKING_URI` | serveur MLflow DagsHub |
+| `MLFLOW_TRACKING_USERNAME` / `MLFLOW_TRACKING_PASSWORD` | identifiants DagsHub |
+| `DAGSHUB_USERNAME` / `DAGSHUB_TOKEN` | identifiants pour `dvc pull` |
+
+Récupérer les données versionnées avec DVC :
+
+```bash
+dvc pull
 ```
 
-Ces fichiers generes sont ignores par Git pour le moment. Ils seront versionnes
-plus tard avec DVC.
+Lancer les tests :
 
-## Classement FIFA
-
-Le projet peut aussi recuperer le classement FIFA depuis l'API World Football
-Ranking de RapidAPI. Cette source servira plus tard a ajouter des features comme
-le rang FIFA, les points FIFA et la difference de niveau entre deux equipes.
-
-Ajouter la cle RapidAPI dans `.env`:
-
-```text
-WORLD_FOOTBALL_RANKING_API_KEY=your_key_here
+```bash
+pytest
 ```
 
-Puis lancer:
+Lancer le backend en local :
 
-```powershell
-python scripts/ingest_fifa_rankings.py
+```bash
+uvicorn backend.main:app --reload
 ```
 
-Cette commande cree localement:
+Lancer avec Docker (le conteneur fait son propre `dvc pull` au démarrage s'il
+trouve `DAGSHUB_USERNAME`/`DAGSHUB_TOKEN` dans l'environnement) :
 
-```text
-data/raw/fifa_ranking_current.json
+```bash
+docker build -t fifa-backend .
+docker run -p 8000:8000 --env-file .env fifa-backend
 ```
 
-Si RapidAPI retourne une erreur `401` ou `403`, verifier que la cle est correcte
-et que l'API World Football Ranking est bien activee dans le compte RapidAPI.
+### Régénérer le pipeline de données depuis zéro
 
-Pour transformer ce JSON en dataset exploitable pour le ML:
-
-```powershell
-python scripts/preprocess_fifa_rankings.py
+```bash
+python scripts/ingest_data.py                 # data/raw/worldcup_matches.json
+python scripts/preprocess_matches.py          # data/processed/matches_processed.csv
+python scripts/ingest_fifa_rankings.py        # data/raw/fifa_ranking_current.json
+python scripts/preprocess_fifa_rankings.py    # data/processed/fifa_rankings_current.csv
+python scripts/build_training_dataset.py      # data/processed/training_matches.csv
+python scripts/train_baseline_model.py        # entraine + logge sur MLflow
 ```
 
-Cette commande cree localement:
+## Répartition initiale de l'équipe
 
-```text
-data/processed/fifa_rankings_current.csv
-```
+- **Data / ML** : données, features, modèle, DVC, MLflow
+- **Backend / API** : FastAPI, endpoints, connexion au modèle
+- **Frontend / DevOps** : interface Next.js, Docker, CI/CD, Render, monitoring
 
-Ce CSV contient notamment `rank`, `fifa_points`, `rank_change`,
-`points_change` et `confederation`. Il servira a enrichir les matchs avec des
-features de niveau d'equipe.
-
-Note: ce classement courant est surtout pertinent pour predire les matchs a
-venir. Pour un backtest historique strict, il faudra plus tard recuperer les
-classements FIFA correspondant aux dates des matchs.
-
-## Dataset d'entrainement enrichi
-
-Pour joindre les matchs avec le classement FIFA et creer le dataset utilise par
-le modele:
-
-```powershell
-python scripts/build_training_dataset.py
-```
-
-Cette commande cree localement:
-
-```text
-data/processed/training_matches.csv
-```
-
-Le script ajoute notamment:
-
-```text
-home_rank
-away_rank
-home_fifa_points
-away_fifa_points
-rank_difference
-points_difference
-```
-
-Le modele baseline lit maintenant ce dataset enrichi:
-
-```powershell
-python scripts/train_baseline_model.py
-```
+Voir [docs/team-tasks.md](docs/team-tasks.md) et [SUIVI_PROJET.md](SUIVI_PROJET.md)
+pour le détail de l'avancement.
