@@ -10,6 +10,7 @@ reproductibles, monitoring).
 
 | Environnement | URL |
 |---|---|
+| Frontend - production | https://fifa-frontend-7be5.onrender.com |
 | API - staging | https://fifa-world-cup-analysis-phep.onrender.com |
 | API - production | https://fifa-backend-production.onrender.com |
 | Monitoring - Prometheus | https://fifa-prometheus.onrender.com |
