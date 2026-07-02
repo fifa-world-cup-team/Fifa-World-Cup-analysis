@@ -56,7 +56,7 @@ Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que
 - `GET /matches` et `GET /standings` (backend) : proxy en cache (60s) de l'API football-data.org, vraies données de la Coupe du Monde 2026 en cours (104 matchs, 12 groupes)
 - Frontend : tableau des matchs à venir avec prédiction par match (bouton), derniers résultats, classements par groupe avec écussons, + simulateur libre (2 équipes au choix)
 - Rafraîchissement automatique toutes les 60s
-- Limite connue : les tours après les 32èmes contiennent encore des cases "à déterminer" (l'API ne remplit les équipes qu'une fois les tours précédents joués) — pas de bracket simulé inventé, ça se remplit tout seul au fil du tournoi
+- `GET /tournament` (backend) : simule tout le bracket à élimination directe (32èmes -> finale) avec notre modèle pour les tours pas encore joués, et les vrais résultats pour ceux déjà joués. Les cases encore "à déterminer" côté API sont remplies en enchaînant les vainqueurs/perdants dans l'ordre chronologique (approximation assumée et affichée, pas un vrai tirage FIFA). Retourne un vainqueur final prédit. Testé (y compris un test qui reproduit un bug trouvé : une équipe réutilisée deux fois dans le même tour, corrigé).
 - Fix CORS au passage (le premier frontend déployé ne marchait pas du tout, bloqué silencieusement par le navigateur)
 ### 7. ~~README final~~ (fait)
 Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.

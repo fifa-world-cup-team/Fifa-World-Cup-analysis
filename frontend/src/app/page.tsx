@@ -5,6 +5,7 @@ import { fetchMatches, fetchStandings, type GroupStanding, type Match } from "@/
 import { MatchesSection } from "@/components/MatchesSection";
 import { StandingsSection } from "@/components/StandingsSection";
 import { PredictorForm } from "@/components/PredictorForm";
+import { TournamentSection } from "@/components/TournamentSection";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -74,6 +75,7 @@ export default function Home() {
 
         {!loading && !error && (
           <>
+            <TournamentSection />
             <MatchesSection matches={matches} />
             <StandingsSection groups={groups} />
             <PredictorForm groups={groups} />

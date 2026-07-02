@@ -8,6 +8,7 @@ from prometheus_client import CONTENT_TYPE_LATEST
 
 from backend import football_data, metrics
 from backend.model_service import PredictionError, load_model, load_rankings, predict_match
+from backend.tournament import simulate_knockout_stages
 
 logger = logging.getLogger("backend")
 
@@ -72,6 +73,22 @@ def standings() -> list[dict]:
         return football_data.get_standings()
     except (RuntimeError, requests.RequestException) as error:
         raise HTTPException(status_code=502, detail=str(error))
+
+
+@app.get("/tournament")
+def tournament() -> dict:
+    if app_state.get("model") is None or app_state.get("rankings") is None:
+        raise HTTPException(
+            status_code=503,
+            detail=app_state.get("error") or "Model not loaded",
+        )
+
+    try:
+        all_matches = football_data.get_matches()
+    except (RuntimeError, requests.RequestException) as error:
+        raise HTTPException(status_code=502, detail=str(error))
+
+    return simulate_knockout_stages(app_state["model"], app_state["rankings"], all_matches)
 
 
 @app.post("/predict")

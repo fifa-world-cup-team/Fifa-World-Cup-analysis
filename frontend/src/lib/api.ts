@@ -39,6 +39,27 @@ export type Prediction = {
   probabilities: Record<string, number>;
 };
 
+export type TournamentMatch = {
+  home_team: string | null;
+  away_team: string | null;
+  resolved: boolean;
+  source?: "actual_result" | "predicted";
+  winner: string | null;
+  home_score?: number;
+  away_score?: number;
+  probabilities?: Record<string, number>;
+};
+
+export type TournamentRound = {
+  stage: string;
+  matches: TournamentMatch[];
+};
+
+export type TournamentResult = {
+  rounds: TournamentRound[];
+  champion: string | null;
+};
+
 export const STAGE_LABELS: Record<string, string> = {
   GROUP_STAGE: "Phase de groupes",
   LAST_32: "32èmes de finale",
@@ -68,6 +89,14 @@ export async function fetchStandings(): Promise<GroupStanding[]> {
   const response = await fetch(`${API_URL}/standings`);
   if (!response.ok) {
     throw new Error("Impossible de récupérer les classements.");
+  }
+  return response.json();
+}
+
+export async function fetchTournament(): Promise<TournamentResult> {
+  const response = await fetch(`${API_URL}/tournament`);
+  if (!response.ok) {
+    throw new Error("Impossible de simuler le tournoi.");
   }
   return response.json();
 }
