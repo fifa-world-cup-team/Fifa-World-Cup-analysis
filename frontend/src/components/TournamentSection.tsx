@@ -87,7 +87,7 @@ function TeamRow({
   return (
     <div
       className={[
-        "flex min-h-7 items-center justify-between gap-1.5 rounded-md px-2 py-1 text-[11px]",
+        "flex min-h-5 items-center justify-between gap-1.5 rounded-md px-1.5 py-0.5 text-[10px]",
         isWinner
           ? "bg-amber-400/20 font-bold text-amber-50 ring-1 ring-amber-300/40"
           : "bg-emerald-950/70 text-emerald-100/75 ring-1 ring-emerald-800/40",
@@ -117,7 +117,7 @@ function MatchCard({
   return (
     <article
       className={[
-        "relative h-[86px] min-w-0 overflow-hidden rounded-lg border p-2 shadow-md shadow-black/20",
+        "relative h-[74px] min-w-0 overflow-hidden rounded-lg border p-1.5 shadow-md shadow-black/20",
         isFinal
           ? "border-amber-400/45 bg-amber-500/10"
           : "border-emerald-700/35 bg-emerald-950/80",
@@ -129,8 +129,8 @@ function MatchCard({
       {connectRight && (
         <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-3 bg-emerald-400/45 lg:block" />
       )}
-      <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-wide">
-        <span className="rounded-full bg-emerald-900/80 px-2 py-0.5 text-emerald-200/70">
+      <div className="mb-1.5 flex items-center justify-between text-[9px] uppercase tracking-wide">
+        <span className="rounded-full bg-emerald-900/80 px-1.5 py-0.5 text-emerald-200/70">
           {match.match_number ? `M${match.match_number}` : status}
         </span>
         {score && <span className="font-semibold text-amber-200">{score}</span>}
@@ -147,11 +147,6 @@ function MatchCard({
           isWinner={Boolean(match.away_team && match.winner === match.away_team)}
         />
       </div>
-      {match.winner && (
-        <p className="mt-1.5 truncate text-[10px] font-semibold text-amber-100">
-          Vainqueur: {match.winner}
-        </p>
-      )}
     </article>
   );
 }
@@ -183,12 +178,12 @@ function BracketColumn({
           return (
             <div
               key={`${round.stage}-pair-${pairIndex}`}
-              className="relative flex flex-col gap-3"
+              className="relative flex flex-col gap-2"
             >
               {hasPairConnector && (
                 <span
                   className={[
-                    "pointer-events-none absolute bottom-[43px] top-[43px] hidden w-px bg-emerald-400/45 lg:block",
+                    "pointer-events-none absolute bottom-[37px] top-[37px] hidden w-px bg-emerald-400/45 lg:block",
                     mergeSide === "right"
                       ? "left-[calc(100%+0.75rem)]"
                       : "right-[calc(100%+0.75rem)]",
@@ -278,7 +273,7 @@ function TournamentBracket({ data }: { data: TournamentResult }) {
   return (
     <div className="mt-5">
       <div className="overflow-hidden rounded-2xl border border-emerald-800/40 bg-black/15 p-3">
-        <div className="grid min-h-[760px] grid-cols-[minmax(0,1fr)_minmax(92px,0.18fr)_minmax(0,1fr)] items-stretch gap-3">
+        <div className="grid min-h-[680px] grid-cols-[minmax(0,1fr)_minmax(92px,0.18fr)_minmax(0,1fr)] items-stretch gap-3">
           <BracketSide rounds={data.rounds} side="left" />
           <FinalColumn finalRound={finalRound} />
           <BracketSide rounds={data.rounds} side="right" />
@@ -348,15 +343,15 @@ export function TournamentSection() {
         <p className="mt-4 text-sm text-emerald-200/60">Simulation en cours...</p>
       ) : (
         <>
-          <div className="mt-4 flex items-center gap-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-400/10 px-5 py-4 ring-1 ring-amber-400/30">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/20 text-xs font-black uppercase tracking-wide text-amber-100 ring-1 ring-amber-200/40">
+          <div className="mt-3 flex items-center gap-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-400/10 px-4 py-3 ring-1 ring-amber-400/30">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-300/20 text-[10px] font-black uppercase tracking-wide text-amber-100 ring-1 ring-amber-200/40">
               FIFA
             </span>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
                 Champion predit
               </p>
-              <p className="text-3xl font-extrabold text-amber-100">
+              <p className="text-2xl font-extrabold text-amber-100">
                 {data.champion ?? "Pas encore determinable"}
               </p>
             </div>
