@@ -36,9 +36,19 @@ curl -X POST https://fifa-backend-production.onrender.com/predict \
 | `GET /metrics` | Métriques Prometheus |
 
 Le frontend (`frontend/`) consomme ces endpoints pour afficher un dashboard en
-direct : prochains matchs avec prédiction, derniers résultats, classements,
-simulateur libre, et vainqueur final probable — rafraîchi automatiquement
-toutes les 60 secondes.
+direct découpé en plusieurs pages : accueil, matchs, classements, simulation du
+tournoi et prédicteur libre. Les données live sont rafraîchies automatiquement
+toutes les 60 secondes sur les pages concernées.
+
+Routes principales du frontend :
+
+| Route | Usage |
+|---|---|
+| `/` | Accueil et navigation |
+| `/matches` | Prochains matchs, résultats et prédictions par match |
+| `/standings` | Classements par groupe |
+| `/tournament` | Simulation du tournoi et champion probable |
+| `/predict` | Simulateur libre entre deux équipes |
 
 ## Architecture
 

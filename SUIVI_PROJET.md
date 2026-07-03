@@ -30,6 +30,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | feature/live-matches-standings | Reconstruction du frontend en vrai dashboard (matchs live, classements, simulation du vainqueur) | Diaby |
 | fix/ui-team-names-and-refresh | Fix noms d'équipes (plus de "domicile/extérieur") + refonte visuelle complète | Diaby |
 | fix/disable-static-cache | Fix cache CDN d'1 an qui servait une page périmée sur Render | Diaby |
+| feature/frontend-multipage-navigation | Découpage du frontend en pages séparées avec navigation | Adrien |
 
 ---
 
@@ -69,6 +70,7 @@ Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que
 - Rafraîchissement automatique toutes les 60s (matchs, classements, et simulation du vainqueur)
 - `GET /tournament` (backend) : simule tout le bracket à élimination directe (32èmes -> finale) avec notre modèle pour les tours pas encore joués, et les vrais résultats pour ceux déjà joués. Les cases encore "à déterminer" côté API sont remplies en enchaînant les vainqueurs/perdants dans l'ordre chronologique (approximation assumée et affichée, pas un vrai tirage FIFA). Retourne un vainqueur final prédit. Testé (y compris un test qui reproduit un bug trouvé : une équipe réutilisée deux fois dans le même tour, corrigé).
 - Refonte visuelle complète (thème sombre "terrain de foot", badges de statut, écussons, carte vainqueur)
+- Navigation multi-pages : accueil, matchs, classements, tournoi, prédicteur libre
 - Fix CORS (le premier frontend déployé ne pouvait pas du tout appeler l'API, bloqué silencieusement par le navigateur)
 - Fix cache CDN (Next.js gardait la page en cache 1 an sur Render après chaque déploiement)
 
