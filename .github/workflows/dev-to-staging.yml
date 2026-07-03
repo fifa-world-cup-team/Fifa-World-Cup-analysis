@@ -50,6 +50,8 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           QUALITY_GATE_MIN_ACCURACY: "0.5"
+          QUALITY_GATE_BACKTEST_MATCH_COUNT: "10"
+          QUALITY_GATE_MIN_IMPROVEMENT: "0.0"
         run: python -m scripts.promote_model
 
       - name: Deploy to staging

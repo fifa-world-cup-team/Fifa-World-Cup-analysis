@@ -122,10 +122,13 @@ Déclenché sur push vers `staging` (fusion d'une PR validée). C'est le
 3. Entraînement d'un modèle candidat (`scripts/train_baseline_model.py`),
    enregistré dans le MLflow Model Registry avec ses métriques, le hash du
    commit Git et la version DVC des données utilisées
-4. `scripts/promote_model.py` : le candidat est passé au stage `Staging`,
-   puis promu au stage `Production` si son accuracy dépasse le seuil de
-   qualité (`QUALITY_GATE_MIN_ACCURACY`, 0.5 par défaut) — sinon il reste en
-   `Staging` et la production n'est pas modifiée
+4. `scripts/promote_model.py` : le candidat est passé au stage `Staging`, puis
+   un backtest est lancé sur les derniers matchs du dataset
+   (`QUALITY_GATE_BACKTEST_MATCH_COUNT`, 10 par défaut). Il n'est promu au stage
+   `Production` que si son accuracy de backtest dépasse le seuil
+   (`QUALITY_GATE_MIN_ACCURACY`, 0.5 par défaut) et bat le modèle champion déjà
+   en `Production` (`QUALITY_GATE_MIN_IMPROVEMENT`, 0.0 par défaut). Si aucun
+   champion n'existe encore, seul le seuil minimum est appliqué.
 5. Déclenchement du redéploiement du service Render de staging
 
 ### 3. `staging -> main` ([.github/workflows/staging-to-main.yml](.github/workflows/staging-to-main.yml))

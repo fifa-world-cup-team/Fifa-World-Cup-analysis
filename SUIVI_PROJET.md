@@ -55,7 +55,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 `fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
 ### 2. ~~GitHub Actions CI/CD~~ (fait)
-Les 3 pipelines exigés tournent réellement : PR → dev (tests + build Docker), dev → staging (tests, dvc pull, entraînement candidat, quality gate accuracy >= 0.5, promotion Staging/Production MLflow, déploiement Render), staging → main (vérification du gate + déploiement Render prod). Testés en conditions réelles le 2026-07-02, prédiction confirmée sur les deux environnements.
+Les 3 pipelines exigés tournent réellement : PR → dev (tests + build Docker), dev → staging (tests, dvc pull, entraînement candidat, backtest sur les derniers matchs, comparaison candidat vs champion Production, promotion Staging/Production MLflow seulement si le candidat gagne, déploiement Render), staging → main (vérification du gate + déploiement Render prod). Testés en conditions réelles le 2026-07-02, prédiction confirmée sur les deux environnements.
 ### 3. ~~Backend FastAPI + Docker~~ (fait)
 API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`), sert `/health` + `POST /predict`. Le conteneur récupère les données via `dvc pull` à son démarrage (identifiants DagsHub passés en variables d'env).
 ### 4. ~~Déploiement cloud~~ (fait, Render)
