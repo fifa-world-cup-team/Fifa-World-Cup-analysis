@@ -124,7 +124,7 @@ def test_simulate_knockout_stages_fills_unresolved_slot_from_finished_winners() 
 
     last_16_match = result["rounds"][1]["matches"][0]
     assert last_16_match["resolved"] is True
-    assert {last_16_match["home_team"], last_16_match["away_team"]} == {"France", "Spain"}
+    assert {last_16_match["home_team"], last_16_match["away_team"]} == {"France", "Argentina"}
     assert result["champion"] is None  # no FINAL stage in this synthetic bracket
 
 
@@ -194,22 +194,22 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
     monkeypatch.setattr("backend.tournament.predict_match", predict_home_win)
 
     round_of_32_winners = [
-        "Germany",  # M74
+        "Canada",  # M73
         "Japan",  # M78
-        "Paraguay",  # M73
-        "Sweden",  # M75
-        "Brazil",  # M76
+        "Paraguay",  # M74
+        "Morocco",  # M75
+        "Norway",  # M76
         "France",  # M77
         "Mexico",  # M79
         "England",  # M80
-        "Morocco",  # M83
-        "Canada",  # M84
-        "Spain",  # M81
-        "Portugal",  # M82
+        "Belgium",  # M82
+        "USA",  # M81
+        "Spain",  # M84
+        "Portugal",  # M83
+        "Switzerland",  # M85
+        "Australia",  # M88
         "Argentina",  # M86
-        "Cabo Verde",  # M88
-        "USA",  # M85
-        "Belgium",  # M87
+        "Colombia",  # M87
     ]
     matches = [
         {
@@ -281,21 +281,23 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
 
     last_16 = result["rounds"][1]["matches"]
     assert [(m["home_team"], m["away_team"]) for m in last_16] == [
-        ("Germany", "France"),
-        ("Paraguay", "Sweden"),
-        ("Brazil", "Japan"),
+        ("Canada", "Morocco"),
+        ("Paraguay", "France"),
+        ("Norway", "Japan"),
         ("Mexico", "England"),
-        ("Morocco", "Canada"),
-        ("Spain", "Portugal"),
-        ("Argentina", "Cabo Verde"),
+        ("Portugal", "Spain"),
         ("USA", "Belgium"),
+        ("Argentina", "Australia"),
+        ("Switzerland", "Colombia"),
     ]
+    teams_seen = [team for match in last_16 for team in (match["home_team"], match["away_team"])]
+    assert len(teams_seen) == len(set(teams_seen))
 
     semi_finals = result["rounds"][3]["matches"]
     assert [(m["home_team"], m["away_team"]) for m in semi_finals] == [
-        ("Germany", "Morocco"),
-        ("Brazil", "Argentina"),
+        ("Paraguay", "Portugal"),
+        ("Norway", "Argentina"),
     ]
-    assert {"Morocco", "Brazil"} not in [
+    assert {"Portugal", "USA"} not in [
         {match["home_team"], match["away_team"]} for match in semi_finals
     ]
