@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import joblib
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
@@ -11,6 +12,7 @@ from scripts.train_baseline_model import FEATURE_COLUMNS
 
 MODEL_NAME = "fifa-world-cup-baseline"
 RANKINGS_PATH = Path("data/processed/fifa_rankings_current.csv")
+LOCAL_MODEL_PATH = Path("models/baseline_model.joblib")
 ENV_PATH = Path(".env")
 RESULT_LABELS = ("home_win", "draw", "away_win")
 
@@ -45,10 +47,23 @@ def resolve_model_uri(client: MlflowClient, model_name: str, stage: str) -> str:
     return f"models:/{model_name}/{latest.version}"
 
 
+def load_local_model(model_path: Path = LOCAL_MODEL_PATH) -> tuple[Pipeline, str]:
+    if not model_path.exists():
+        raise PredictionError(
+            f"MLflow is unavailable and local model {model_path} is missing. "
+            "Run scripts/train_baseline_model.py first."
+        )
+
+    return joblib.load(model_path), f"local:{model_path}"
+
+
 def load_model() -> tuple[Pipeline, str]:
-    import mlflow
-    import mlflow.sklearn
-    from mlflow.tracking import MlflowClient
+    try:
+        import mlflow
+        import mlflow.sklearn
+        from mlflow.tracking import MlflowClient
+    except ImportError:
+        return load_local_model()
 
     load_env_file()
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")

@@ -1,7 +1,12 @@
 import pandas as pd
 import pytest
 
-from backend.model_service import PredictionError, build_feature_row, predict_match
+from backend.model_service import (
+    PredictionError,
+    build_feature_row,
+    load_local_model,
+    predict_match,
+)
 from scripts.train_baseline_model import FEATURE_COLUMNS, train_model
 
 RANKINGS = pd.DataFrame(
@@ -30,6 +35,72 @@ def test_build_feature_row_computes_rank_and_points_difference() -> None:
 def test_build_feature_row_raises_for_unknown_team() -> None:
     with pytest.raises(PredictionError):
         build_feature_row("Narnia", "Argentina", "GROUP_STAGE", RANKINGS)
+
+
+def test_load_local_model_returns_joblib_model(tmp_path) -> None:
+    model_path = tmp_path / "baseline_model.joblib"
+    dataset = pd.DataFrame(
+        [
+            {
+                "home_team": "France",
+                "away_team": "Argentina",
+                "stage": "GROUP_STAGE",
+                "result": "home_win",
+                "home_rank": 3,
+                "away_rank": 1,
+                "home_fifa_points": 1870.7,
+                "away_fifa_points": 1877.3,
+                "rank_difference": -2,
+                "points_difference": -6.6,
+            },
+            {
+                "home_team": "Brazil",
+                "away_team": "Spain",
+                "stage": "GROUP_STAGE",
+                "result": "draw",
+                "home_rank": 6,
+                "away_rank": 2,
+                "home_fifa_points": 1761.0,
+                "away_fifa_points": 1874.7,
+                "rank_difference": -4,
+                "points_difference": -113.7,
+            },
+            {
+                "home_team": "Germany",
+                "away_team": "Italy",
+                "stage": "GROUP_STAGE",
+                "result": "away_win",
+                "home_rank": 10,
+                "away_rank": 9,
+                "home_fifa_points": 1717.0,
+                "away_fifa_points": 1718.0,
+                "rank_difference": -1,
+                "points_difference": -1.0,
+            },
+            {
+                "home_team": "France",
+                "away_team": "Brazil",
+                "stage": "LAST_16",
+                "result": "home_win",
+                "home_rank": 3,
+                "away_rank": 6,
+                "home_fifa_points": 1870.7,
+                "away_fifa_points": 1761.0,
+                "rank_difference": 3,
+                "points_difference": 109.7,
+            },
+        ]
+    )
+    model, _ = train_model(dataset)
+
+    import joblib
+
+    joblib.dump(model, model_path)
+
+    loaded_model, model_uri = load_local_model(model_path)
+
+    assert hasattr(loaded_model, "predict")
+    assert model_uri == f"local:{model_path}"
 
 
 def test_predict_match_returns_prediction_and_probabilities() -> None:
