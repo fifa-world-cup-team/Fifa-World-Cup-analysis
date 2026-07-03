@@ -62,6 +62,14 @@ function getSideRound(
   return { stage, matches };
 }
 
+function toMatchPairs(matches: TournamentMatch[]) {
+  const pairs: TournamentMatch[][] = [];
+  for (let index = 0; index < matches.length; index += 2) {
+    pairs.push(matches.slice(index, index + 2));
+  }
+  return pairs;
+}
+
 function scoreLabel(match: TournamentMatch) {
   if (match.home_score === undefined || match.away_score === undefined) return null;
   return `${match.home_score}-${match.away_score}`;
@@ -153,40 +161,45 @@ function BracketColumn({
   columnIndex: number;
   columnCount: number;
 }) {
-  const gap = Math.min(12 * 2 ** index, 96);
+  const pairGap = Math.min(18 * 2 ** index, 140);
+  const innerGap = 18;
   const connectLeft = side === "left" ? columnIndex > 0 : true;
   const connectRight = side === "left" ? true : columnIndex < columnCount - 1;
   const mergeSide = side === "left" ? "right" : "left";
+  const pairs = toMatchPairs(round.matches);
 
   return (
     <div className="flex min-w-[190px] flex-col">
       <h3 className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-emerald-300/70">
         {SHORT_STAGE_LABELS[round.stage] ?? STAGE_LABELS[round.stage] ?? round.stage}
       </h3>
-      <div className="flex flex-1 flex-col justify-center" style={{ gap }}>
-        {round.matches.map((match, matchIndex) => {
-          const hasPair = matchIndex % 2 === 0 && matchIndex + 1 < round.matches.length;
+      <div className="flex flex-1 flex-col justify-center" style={{ gap: pairGap }}>
+        {pairs.map((pair, pairIndex) => {
+          const hasPairConnector = pair.length === 2 && (connectLeft || connectRight);
           return (
             <div
-              key={`${round.stage}-${match.match_number ?? matchIndex}`}
-              className="relative"
+              key={`${round.stage}-pair-${pairIndex}`}
+              className="relative flex flex-col"
+              style={{ gap: innerGap }}
             >
-              <MatchCard
-                match={match}
-                connectLeft={connectLeft}
-                connectRight={connectRight}
-              />
-              {hasPair && (
+              {hasPairConnector && (
                 <span
                   className={[
-                    "pointer-events-none absolute top-1/2 hidden w-px bg-emerald-400/35 lg:block",
+                    "pointer-events-none absolute bottom-[4.1rem] top-[4.1rem] hidden w-px bg-emerald-400/45 lg:block",
                     mergeSide === "right"
                       ? "left-[calc(100%+1.5rem)]"
                       : "right-[calc(100%+1.5rem)]",
                   ].join(" ")}
-                  style={{ height: `calc(100% + ${gap}px)` }}
                 />
               )}
+              {pair.map((match, matchIndex) => (
+                <MatchCard
+                  key={`${round.stage}-${match.match_number ?? `${pairIndex}-${matchIndex}`}`}
+                  match={match}
+                  connectLeft={connectLeft}
+                  connectRight={connectRight}
+                />
+              ))}
             </div>
           );
         })}
