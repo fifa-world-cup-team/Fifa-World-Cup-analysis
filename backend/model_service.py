@@ -1,13 +1,12 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
-import mlflow
-import mlflow.sklearn
 import pandas as pd
-from mlflow.tracking import MlflowClient
 from sklearn.pipeline import Pipeline
 
-from scripts.build_training_dataset import RANKING_COLUMNS, normalize_team_name
+from scripts.build_training_dataset import INITIAL_ELO, RANKING_COLUMNS, normalize_team_name
 from scripts.train_baseline_model import FEATURE_COLUMNS
 
 MODEL_NAME = "fifa-world-cup-baseline"
@@ -46,6 +45,10 @@ def resolve_model_uri(client: MlflowClient, model_name: str, stage: str) -> str:
 
 
 def load_model() -> tuple[Pipeline, str]:
+    import mlflow
+    import mlflow.sklearn
+    from mlflow.tracking import MlflowClient
+
     load_env_file()
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if tracking_uri:
@@ -94,6 +97,17 @@ def build_feature_row(
                 "away_fifa_points": away_ranking["fifa_points"],
                 "rank_difference": away_ranking["rank"] - home_ranking["rank"],
                 "points_difference": home_ranking["fifa_points"] - away_ranking["fifa_points"],
+                "home_elo": INITIAL_ELO,
+                "away_elo": INITIAL_ELO,
+                "elo_difference": 0.0,
+                "home_recent_form_points": 0.0,
+                "away_recent_form_points": 0.0,
+                "home_recent_goals_for_avg": 0.0,
+                "away_recent_goals_for_avg": 0.0,
+                "home_recent_goals_against_avg": 0.0,
+                "away_recent_goals_against_avg": 0.0,
+                "home_matches_played_before": 0.0,
+                "away_matches_played_before": 0.0,
             }
         ]
     )

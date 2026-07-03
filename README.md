@@ -152,6 +152,19 @@ Chaque version enregistrée trace :
 - la version des données DVC utilisée pour l'entraîner
 - le hash du commit Git correspondant
 
+## Features ML
+
+Le dataset d'entraînement combine les matchs de Coupe du Monde, le classement
+FIFA et des features calculées avant chaque match : Elo simple, forme récente
+sur les derniers matchs joués, buts marqués/encaissés moyens et différences de
+classement/points FIFA.
+
+Pour la Coupe du Monde, `home_team` et `away_team` sont traités comme équipe A
+et équipe B, pas comme un vrai avantage domicile/extérieur. Les matchs sont donc
+considérés comme joués sur terrain neutre. Si le projet ajoute plus tard des
+matchs internationaux hors Coupe du Monde, on pourra introduire une colonne
+`is_neutral_site` pour distinguer les contextes.
+
 ## Monitoring
 
 Le backend de production expose `/metrics` au format Prometheus :
