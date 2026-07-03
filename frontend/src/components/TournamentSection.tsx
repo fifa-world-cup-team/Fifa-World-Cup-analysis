@@ -143,6 +143,29 @@ function MatchCard({
   );
 }
 
+function ForkConnector({ side }: { side: "left" | "right" }) {
+  const sideClass = side === "left" ? "left-[-0.75rem]" : "right-[-0.75rem]";
+  const centerArmClass =
+    side === "left" ? "left-[-0.75rem]" : "right-[-0.75rem]";
+
+  return (
+    <>
+      <span
+        className={[
+          "pointer-events-none absolute top-[24%] bottom-[24%] hidden w-px bg-emerald-400/50 lg:block",
+          sideClass,
+        ].join(" ")}
+      />
+      <span
+        className={[
+          "pointer-events-none absolute top-1/2 hidden h-px w-3 bg-emerald-400/50 lg:block",
+          centerArmClass,
+        ].join(" ")}
+      />
+    </>
+  );
+}
+
 function BracketColumn({
   round,
   side,
@@ -158,6 +181,8 @@ function BracketColumn({
   const groupSpan = stageProgress >= 0 ? 2 ** stageProgress : 1;
   const connectLeft = side === "left" ? columnIndex > 0 : true;
   const connectRight = side === "left" ? true : columnIndex < columnCount - 1;
+  const incomingSide = side === "left" ? "left" : "right";
+  const showIncomingFork = groupSpan > 1;
 
   return (
     <div className="flex min-w-0 flex-col">
@@ -173,6 +198,7 @@ function BracketColumn({
               className="relative flex min-h-0 items-center"
               style={{ gridRow: `${rowStart} / span ${groupSpan}` }}
             >
+              {showIncomingFork && <ForkConnector side={incomingSide} />}
               <MatchCard
                 match={match}
                 connectLeft={connectLeft}
