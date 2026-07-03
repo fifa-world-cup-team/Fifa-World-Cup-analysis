@@ -1,17 +1,17 @@
+from __future__ import annotations
+
 import os
 import sys
 
-import mlflow
-import mlflow.sklearn
 import pandas as pd
 from sklearn.metrics import accuracy_score
-from mlflow.tracking import MlflowClient
 
 from scripts.train_baseline_model import (
     DATASET_PATH,
     FEATURE_COLUMNS,
     REGISTERED_MODEL_NAME,
     TARGET_COLUMN,
+    add_default_engineered_features,
     load_dataset,
     load_env_file,
 )
@@ -67,11 +67,14 @@ def evaluate_model_on_backtest(model, backtest_dataset: pd.DataFrame) -> float:
     if backtest_dataset.empty:
         raise RuntimeError("Backtest dataset is empty.")
 
+    backtest_dataset = add_default_engineered_features(backtest_dataset)
     predictions = model.predict(backtest_dataset[FEATURE_COLUMNS])
     return accuracy_score(backtest_dataset[TARGET_COLUMN], predictions)
 
 
 def load_model_version(model_name: str, version: str):
+    import mlflow.sklearn
+
     return mlflow.sklearn.load_model(f"models:/{model_name}/{version}")
 
 
@@ -90,6 +93,10 @@ def main() -> None:
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if not tracking_uri:
         raise RuntimeError("MLFLOW_TRACKING_URI must be set to run the promotion pipeline.")
+
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
     mlflow.set_tracking_uri(tracking_uri)
 
     client = MlflowClient()

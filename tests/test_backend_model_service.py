@@ -20,6 +20,11 @@ def test_build_feature_row_computes_rank_and_points_difference() -> None:
     assert row.iloc[0]["away_rank"] == 1
     assert row.iloc[0]["rank_difference"] == -2
     assert round(row.iloc[0]["points_difference"], 1) == -6.6
+    assert row.iloc[0]["home_elo"] == 1500.0
+    assert row.iloc[0]["away_elo"] == 1500.0
+    assert row.iloc[0]["elo_difference"] == 0.0
+    assert row.iloc[0]["home_recent_form_points"] == 0.0
+    assert row.iloc[0]["away_recent_goals_for_avg"] == 0.0
 
 
 def test_build_feature_row_raises_for_unknown_team() -> None:

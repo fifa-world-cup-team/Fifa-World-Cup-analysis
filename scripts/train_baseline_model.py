@@ -4,8 +4,6 @@ import sys
 from pathlib import Path
 
 import joblib
-import mlflow
-import mlflow.sklearn
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
@@ -30,10 +28,34 @@ NUMERIC_FEATURE_COLUMNS = [
     "away_rank",
     "home_fifa_points",
     "away_fifa_points",
+    "home_elo",
+    "away_elo",
+    "elo_difference",
+    "home_recent_form_points",
+    "away_recent_form_points",
+    "home_recent_goals_for_avg",
+    "away_recent_goals_for_avg",
+    "home_recent_goals_against_avg",
+    "away_recent_goals_against_avg",
+    "home_matches_played_before",
+    "away_matches_played_before",
 ]
 FEATURE_COLUMNS = [*CATEGORICAL_FEATURE_COLUMNS, *NUMERIC_FEATURE_COLUMNS]
 TARGET_COLUMN = "result"
 RANDOM_STATE = 42
+DEFAULT_ENGINEERED_FEATURE_VALUES = {
+    "home_elo": 1500.0,
+    "away_elo": 1500.0,
+    "elo_difference": 0.0,
+    "home_recent_form_points": 0.0,
+    "away_recent_form_points": 0.0,
+    "home_recent_goals_for_avg": 0.0,
+    "away_recent_goals_for_avg": 0.0,
+    "home_recent_goals_against_avg": 0.0,
+    "away_recent_goals_against_avg": 0.0,
+    "home_matches_played_before": 0.0,
+    "away_matches_played_before": 0.0,
+}
 
 
 def load_env_file(env_path: Path = ENV_PATH) -> None:
@@ -72,6 +94,14 @@ def get_dvc_data_version(dvc_pointer_path: Path = DVC_POINTER_PATH) -> str:
     return "unknown"
 
 
+def add_default_engineered_features(dataset: pd.DataFrame) -> pd.DataFrame:
+    dataset = dataset.copy()
+    for column, default_value in DEFAULT_ENGINEERED_FEATURE_VALUES.items():
+        if column not in dataset.columns:
+            dataset[column] = default_value
+    return dataset
+
+
 def load_dataset(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
     if not dataset_path.exists():
         raise RuntimeError(
@@ -79,7 +109,7 @@ def load_dataset(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
             "Run scripts/build_training_dataset.py first."
         )
 
-    dataset = pd.read_csv(dataset_path)
+    dataset = add_default_engineered_features(pd.read_csv(dataset_path))
     missing_columns = [
         column
         for column in [*FEATURE_COLUMNS, TARGET_COLUMN]
@@ -99,6 +129,7 @@ def load_dataset(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
 
 
 def train_model(dataset: pd.DataFrame) -> tuple[Pipeline, float]:
+    dataset = add_default_engineered_features(dataset)
     x = dataset[FEATURE_COLUMNS]
     y = dataset[TARGET_COLUMN]
 
@@ -151,18 +182,19 @@ def save_model(model: Pipeline, model_path: Path = MODEL_PATH) -> None:
     joblib.dump(model, model_path)
 
 
-def main() -> None:
-    load_env_file()
-    dataset = load_dataset()
+def log_model_to_mlflow(model: Pipeline, accuracy: float, tracking_uri: str | None) -> None:
+    try:
+        import mlflow
+        import mlflow.sklearn
+    except ImportError as error:
+        print(f"Warning: MLflow logging skipped ({error}).", file=sys.stderr)
+        return
 
-    tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if tracking_uri:
         mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(EXPERIMENT_NAME)
 
     with mlflow.start_run():
-        model, accuracy = train_model(dataset)
-
         mlflow.log_param("model_type", "LogisticRegression")
         mlflow.log_param("categorical_features", ",".join(CATEGORICAL_FEATURE_COLUMNS))
         mlflow.log_param("numeric_features", ",".join(NUMERIC_FEATURE_COLUMNS))
@@ -175,6 +207,14 @@ def main() -> None:
             log_model_kwargs["registered_model_name"] = REGISTERED_MODEL_NAME
         mlflow.sklearn.log_model(model, **log_model_kwargs)
 
+
+def main() -> None:
+    load_env_file()
+    dataset = load_dataset()
+
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+    model, accuracy = train_model(dataset)
+    log_model_to_mlflow(model, accuracy, tracking_uri)
     save_model(model)
 
     print(f"Trained baseline model on {len(dataset)} matches")
