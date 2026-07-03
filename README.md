@@ -107,7 +107,8 @@ par une Pull Request.
 
 ## Pipelines CI/CD
 
-Trois workflows GitHub Actions, un par transition de branche :
+Quatre workflows GitHub Actions couvrent les transitions de branche et
+l'actualisation automatique des données :
 
 ### 1. `PR -> dev` ([.github/workflows/pr-dev.yml](.github/workflows/pr-dev.yml))
 Déclenché sur toute Pull Request vers `dev`. Étapes : installation des
@@ -136,6 +137,14 @@ Déclenché sur push vers `main`. Vérifie qu'une version du modèle est bien au
 stage `Production` (`scripts/verify_production_model.py` — si aucune version
 n'a passé le gate, le déploiement est bloqué), relance la suite de tests, puis
 déclenche le redéploiement du service Render de production.
+
+### 4. Actualisation quotidienne des données ([.github/workflows/scheduled-retraining.yml](.github/workflows/scheduled-retraining.yml))
+Déclenchée tous les jours à 06:00 UTC et lançable manuellement depuis GitHub
+Actions. Le workflow récupère les derniers matchs et le classement FIFA,
+reconstruit `training_matches.csv`, met à jour les pointeurs DVC, pousse les
+objets vers DagsHub, commit les nouvelles versions de données sur `dev`, puis
+entraîne un candidat MLflow. Si le quality gate passe, le modèle est promu et le
+backend de staging est redéployé.
 
 ## Modèle de promotion
 
@@ -228,11 +237,7 @@ docker run -p 8000:8000 --env-file .env fifa-backend
 ### Régénérer le pipeline de données depuis zéro
 
 ```bash
-python scripts/ingest_data.py                 # data/raw/worldcup_matches.json
-python scripts/preprocess_matches.py          # data/processed/matches_processed.csv
-python scripts/ingest_fifa_rankings.py        # data/raw/fifa_ranking_current.json
-python scripts/preprocess_fifa_rankings.py    # data/processed/fifa_rankings_current.csv
-python scripts/build_training_dataset.py      # data/processed/training_matches.csv
+python scripts/update_data.py                 # toutes les données raw/processed + training dataset
 python scripts/train_baseline_model.py        # entraine + logge sur MLflow
 ```
 
