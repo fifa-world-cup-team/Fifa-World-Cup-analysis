@@ -14,7 +14,7 @@ KNOCKOUT_STAGES = [
 # winners feed different quarters and semi-finals. Keeping these feeds avoids
 # impossible fixtures between teams that are on opposite sides of the bracket.
 STAGE_MATCH_NUMBERS_BY_DATE = {
-    "LAST_32": [74, 77, 73, 75, 76, 78, 79, 80, 83, 84, 81, 82, 86, 88, 85, 87],
+    "LAST_32": [74, 78, 73, 75, 76, 77, 79, 80, 83, 84, 81, 82, 86, 88, 85, 87],
     "LAST_16": [89, 90, 91, 92, 93, 94, 95, 96],
     "QUARTER_FINALS": [97, 98, 99, 100],
     "SEMI_FINALS": [101, 102],

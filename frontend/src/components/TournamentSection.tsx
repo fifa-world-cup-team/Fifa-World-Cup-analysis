@@ -93,10 +93,12 @@ function TeamRow({
 
 function MatchCard({
   match,
-  connector = "none",
+  connectLeft = false,
+  connectRight = false,
 }: {
   match: TournamentMatch;
-  connector?: "left" | "right" | "none";
+  connectLeft?: boolean;
+  connectRight?: boolean;
 }) {
   const status =
     match.source === "actual_result" ? "reel" : match.source === "predicted" ? "predit" : "a venir";
@@ -104,10 +106,10 @@ function MatchCard({
 
   return (
     <article className="relative min-w-[170px] rounded-xl border border-emerald-700/35 bg-emerald-950/80 p-2 shadow-md shadow-black/20">
-      {connector === "right" && (
+      {connectRight && (
         <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
       )}
-      {connector === "left" && (
+      {connectLeft && (
         <span className="pointer-events-none absolute right-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
       )}
       <div className="mb-2 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wide">
@@ -142,13 +144,19 @@ function BracketColumn({
   round,
   index,
   side,
+  columnIndex,
+  columnCount,
 }: {
   round: TournamentRound;
   index: number;
   side: "left" | "right";
+  columnIndex: number;
+  columnCount: number;
 }) {
   const gap = Math.min(12 * 2 ** index, 96);
-  const connector = side === "left" ? "right" : "left";
+  const connectLeft = side === "left" ? columnIndex > 0 : true;
+  const connectRight = side === "left" ? true : columnIndex < columnCount - 1;
+  const mergeSide = side === "left" ? "right" : "left";
 
   return (
     <div className="flex min-w-[190px] flex-col">
@@ -156,13 +164,32 @@ function BracketColumn({
         {SHORT_STAGE_LABELS[round.stage] ?? STAGE_LABELS[round.stage] ?? round.stage}
       </h3>
       <div className="flex flex-1 flex-col justify-center" style={{ gap }}>
-        {round.matches.map((match, matchIndex) => (
-          <MatchCard
-            key={`${round.stage}-${match.match_number ?? matchIndex}`}
-            match={match}
-            connector={connector}
-          />
-        ))}
+        {round.matches.map((match, matchIndex) => {
+          const hasPair = matchIndex % 2 === 0 && matchIndex + 1 < round.matches.length;
+          return (
+            <div
+              key={`${round.stage}-${match.match_number ?? matchIndex}`}
+              className="relative"
+            >
+              <MatchCard
+                match={match}
+                connectLeft={connectLeft}
+                connectRight={connectRight}
+              />
+              {hasPair && (
+                <span
+                  className={[
+                    "pointer-events-none absolute top-1/2 hidden w-px bg-emerald-400/35 lg:block",
+                    mergeSide === "right"
+                      ? "left-[calc(100%+1.5rem)]"
+                      : "right-[calc(100%+1.5rem)]",
+                  ].join(" ")}
+                  style={{ height: `calc(100% + ${gap}px)` }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -191,6 +218,8 @@ function BracketSide({
             round={round}
             index={spacingIndex}
             side={side}
+            columnIndex={index}
+            columnCount={sideRounds.length}
           />
         );
       })}
@@ -208,7 +237,7 @@ function FinalColumn({ finalRound }: { finalRound: TournamentRound | null }) {
       </h3>
       <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 shadow-lg shadow-amber-950/30">
         {finalMatch ? (
-          <MatchCard match={finalMatch} />
+          <MatchCard match={finalMatch} connectLeft connectRight />
         ) : (
           <p className="rounded-xl border border-amber-400/20 bg-amber-950/30 p-4 text-center text-sm text-amber-100/70">
             Finale a determiner

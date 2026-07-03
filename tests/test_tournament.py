@@ -66,10 +66,50 @@ def test_simulate_knockout_stages_fills_unresolved_slot_from_finished_winners() 
             "home_team": _team("Argentina"),
             "away_team": _team("Spain"),
             "home_score": 1,
-            "away_score": 3,
+            "away_score": 0,
         },
         {
             "id": 3,
+            "utc_date": "2026-07-01T06:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team("Brazil"),
+            "away_team": _team("Argentina"),
+            "home_score": 1,
+            "away_score": 0,
+        },
+        {
+            "id": 4,
+            "utc_date": "2026-07-01T09:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team("Argentina"),
+            "away_team": _team("Brazil"),
+            "home_score": 1,
+            "away_score": 0,
+        },
+        {
+            "id": 5,
+            "utc_date": "2026-07-01T12:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team("Brazil"),
+            "away_team": _team("Argentina"),
+            "home_score": 1,
+            "away_score": 0,
+        },
+        {
+            "id": 6,
+            "utc_date": "2026-07-01T15:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team("Spain"),
+            "away_team": _team("Brazil"),
+            "home_score": 1,
+            "away_score": 0,
+        },
+        {
+            "id": 7,
             "utc_date": "2026-07-04T00:00:00Z",
             "status": "TIMED",
             "stage": "LAST_16",
@@ -155,11 +195,11 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
 
     round_of_32_winners = [
         "Germany",  # M74
-        "France",  # M77
+        "Japan",  # M78
         "Paraguay",  # M73
         "Sweden",  # M75
         "Brazil",  # M76
-        "Norway",  # M78
+        "France",  # M77
         "Mexico",  # M79
         "England",  # M80
         "Morocco",  # M83
@@ -243,7 +283,7 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
     assert [(m["home_team"], m["away_team"]) for m in last_16] == [
         ("Germany", "France"),
         ("Paraguay", "Sweden"),
-        ("Brazil", "Norway"),
+        ("Brazil", "Japan"),
         ("Mexico", "England"),
         ("Morocco", "Canada"),
         ("Spain", "Portugal"),
