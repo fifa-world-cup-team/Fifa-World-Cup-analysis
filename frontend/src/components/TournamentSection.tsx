@@ -87,7 +87,7 @@ function TeamRow({
   return (
     <div
       className={[
-        "flex min-h-8 items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs",
+        "flex min-h-5 items-center justify-between gap-1 rounded-md px-1.5 py-0.5 text-[10px]",
         isWinner
           ? "bg-amber-400/20 font-bold text-amber-50 ring-1 ring-amber-300/40"
           : "bg-emerald-950/70 text-emerald-100/75 ring-1 ring-emerald-800/40",
@@ -113,21 +113,21 @@ function MatchCard({
   const score = scoreLabel(match);
 
   return (
-    <article className="relative min-w-[170px] rounded-xl border border-emerald-700/35 bg-emerald-950/80 p-2 shadow-md shadow-black/20">
+    <article className="relative h-[90px] w-[120px] overflow-hidden rounded-lg border border-emerald-700/35 bg-emerald-950/80 p-1.5 shadow-md shadow-black/20">
       {connectRight && (
-        <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
+        <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-2 bg-emerald-400/45 lg:block" />
       )}
       {connectLeft && (
-        <span className="pointer-events-none absolute right-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
+        <span className="pointer-events-none absolute right-full top-1/2 hidden h-px w-2 bg-emerald-400/45 lg:block" />
       )}
-      <div className="mb-2 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wide">
-        <span className="rounded-full bg-emerald-900/80 px-2 py-0.5 text-emerald-200/70">
+      <div className="mb-1 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide">
+        <span className="rounded-full bg-emerald-900/80 px-1.5 py-0.5 text-emerald-200/70">
           {match.match_number ? `M${match.match_number}` : status}
         </span>
         <span className="text-emerald-300/60">{status}</span>
         {score && <span className="font-semibold text-amber-200">{score}</span>}
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         <TeamRow
           name={match.home_team}
           score={match.home_score}
@@ -140,7 +140,7 @@ function MatchCard({
         />
       </div>
       {match.winner && (
-        <p className="mt-2 truncate text-[11px] font-semibold text-amber-100">
+        <p className="mt-1 truncate text-[9px] font-semibold text-amber-100">
           Vainqueur: {match.winner}
         </p>
       )}
@@ -161,16 +161,16 @@ function BracketColumn({
   columnIndex: number;
   columnCount: number;
 }) {
-  const pairGap = Math.min(18 * 2 ** index, 140);
-  const innerGap = 18;
+  const pairGap = Math.min(14 * 2 ** index, 108);
+  const innerGap = 14;
   const connectLeft = side === "left" ? columnIndex > 0 : true;
   const connectRight = side === "left" ? true : columnIndex < columnCount - 1;
   const mergeSide = side === "left" ? "right" : "left";
   const pairs = toMatchPairs(round.matches);
 
   return (
-    <div className="flex min-w-[190px] flex-col">
-      <h3 className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-emerald-300/70">
+    <div className="flex w-[120px] flex-col">
+      <h3 className="mb-2 text-center text-[10px] font-bold uppercase tracking-widest text-emerald-300/70">
         {SHORT_STAGE_LABELS[round.stage] ?? STAGE_LABELS[round.stage] ?? round.stage}
       </h3>
       <div className="flex flex-1 flex-col justify-center" style={{ gap: pairGap }}>
@@ -185,10 +185,10 @@ function BracketColumn({
               {hasPairConnector && (
                 <span
                   className={[
-                    "pointer-events-none absolute bottom-[4.1rem] top-[4.1rem] hidden w-px bg-emerald-400/45 lg:block",
+                    "pointer-events-none absolute bottom-[45px] top-[45px] hidden w-px bg-emerald-400/45 lg:block",
                     mergeSide === "right"
-                      ? "left-[calc(100%+1.5rem)]"
-                      : "right-[calc(100%+1.5rem)]",
+                      ? "left-[calc(100%+0.5rem)]"
+                      : "right-[calc(100%+0.5rem)]",
                   ].join(" ")}
                 />
               )}
@@ -222,7 +222,7 @@ function BracketSide({
     .filter((round): round is TournamentRound => Boolean(round));
 
   return (
-    <div className="flex items-stretch gap-6">
+    <div className="flex items-stretch gap-4">
       {sideRounds.map((round, index) => {
         const spacingIndex = side === "left" ? index : sideRounds.length - index - 1;
         return (
@@ -244,15 +244,15 @@ function FinalColumn({ finalRound }: { finalRound: TournamentRound | null }) {
   const finalMatch = finalRound?.matches[0];
 
   return (
-    <div className="flex min-w-[210px] flex-col justify-center">
-      <h3 className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-amber-300/80">
+    <div className="flex w-[132px] flex-col items-center justify-center">
+      <h3 className="mb-2 text-center text-[10px] font-bold uppercase tracking-widest text-amber-300/80">
         Finale
       </h3>
-      <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 shadow-lg shadow-amber-950/30">
+      <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 p-1.5 shadow-lg shadow-amber-950/30">
         {finalMatch ? (
           <MatchCard match={finalMatch} connectLeft connectRight />
         ) : (
-          <p className="rounded-xl border border-amber-400/20 bg-amber-950/30 p-4 text-center text-sm text-amber-100/70">
+          <p className="rounded-xl border border-amber-400/20 bg-amber-950/30 p-3 text-center text-xs text-amber-100/70">
             Finale a determiner
           </p>
         )}
@@ -276,8 +276,8 @@ function TournamentBracket({ data }: { data: TournamentResult }) {
 
   return (
     <div className="mt-5">
-      <div className="overflow-x-auto rounded-2xl border border-emerald-800/40 bg-black/15 p-4">
-        <div className="flex min-w-max items-stretch justify-center gap-8">
+      <div className="overflow-x-hidden rounded-2xl border border-emerald-800/40 bg-black/15 p-3">
+        <div className="flex w-full min-w-[1180px] items-stretch justify-center gap-4">
           <BracketSide rounds={data.rounds} side="left" />
           <FinalColumn finalRound={finalRound} />
           <BracketSide rounds={data.rounds} side="right" />
@@ -333,7 +333,7 @@ export function TournamentSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-amber-700/30 bg-gradient-to-br from-emerald-950/60 to-amber-950/20 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
+    <section className="relative left-1/2 w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-amber-700/30 bg-gradient-to-br from-emerald-950/60 to-amber-950/20 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
       <h2 className="flex items-center gap-2 text-lg font-semibold text-emerald-50">
         Qui va gagner la Coupe du Monde ?
       </h2>
