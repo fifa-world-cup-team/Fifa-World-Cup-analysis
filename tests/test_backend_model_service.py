@@ -6,6 +6,7 @@ from backend.model_service import (
     build_feature_row,
     load_local_model,
     predict_match,
+    remove_draw_for_knockout,
 )
 from scripts.train_baseline_model import FEATURE_COLUMNS, train_model
 
@@ -179,3 +180,27 @@ def test_predict_match_is_neutral_to_team_order() -> None:
     assert france_vs_argentina["probabilities"]["draw"] == pytest.approx(
         argentina_vs_france["probabilities"]["draw"]
     )
+
+
+def test_remove_draw_for_knockout_renormalizes_win_probabilities() -> None:
+    probabilities = {
+        "home_win": 0.388,
+        "draw": 0.449,
+        "away_win": 0.163,
+    }
+
+    result = remove_draw_for_knockout(probabilities, "LAST_16")
+
+    assert result["draw"] == 0.0
+    assert result["home_win"] == pytest.approx(0.388 / (0.388 + 0.163))
+    assert result["away_win"] == pytest.approx(0.163 / (0.388 + 0.163))
+
+
+def test_remove_draw_for_knockout_keeps_group_stage_draw() -> None:
+    probabilities = {
+        "home_win": 0.388,
+        "draw": 0.449,
+        "away_win": 0.163,
+    }
+
+    assert remove_draw_for_knockout(probabilities, "GROUP_STAGE") == probabilities

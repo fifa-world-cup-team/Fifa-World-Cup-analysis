@@ -15,6 +15,15 @@ RANKINGS_PATH = Path("data/processed/fifa_rankings_current.csv")
 LOCAL_MODEL_PATH = Path("models/baseline_model.joblib")
 ENV_PATH = Path(".env")
 RESULT_LABELS = ("home_win", "draw", "away_win")
+KNOCKOUT_STAGES = {
+    "LAST_32",
+    "LAST_16",
+    "ROUND_OF_16",
+    "QUARTER_FINALS",
+    "SEMI_FINALS",
+    "THIRD_PLACE",
+    "FINAL",
+}
 
 
 class PredictionError(Exception):
@@ -167,6 +176,26 @@ def most_likely_result(probabilities: dict[str, float]) -> str:
     return max(RESULT_LABELS, key=lambda label: probabilities[label])
 
 
+def remove_draw_for_knockout(
+    probabilities: dict[str, float],
+    stage: str,
+) -> dict[str, float]:
+    if stage not in KNOCKOUT_STAGES:
+        return probabilities
+
+    home_win = probabilities["home_win"]
+    away_win = probabilities["away_win"]
+    total = home_win + away_win
+    if total == 0:
+        return {"home_win": 0.5, "draw": 0.0, "away_win": 0.5}
+
+    return {
+        "home_win": home_win / total,
+        "draw": 0.0,
+        "away_win": away_win / total,
+    }
+
+
 def predict_match(
     model: Pipeline,
     rankings: pd.DataFrame,
@@ -181,6 +210,7 @@ def predict_match(
         predict_directional_probabilities(model, swapped_features)
     )
     probabilities = average_probabilities(direct_probabilities, swapped_probabilities)
+    probabilities = remove_draw_for_knockout(probabilities, stage)
 
     return {
         "prediction": most_likely_result(probabilities),

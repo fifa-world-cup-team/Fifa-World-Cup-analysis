@@ -95,6 +95,12 @@ def _unresolved_result(match_number: int, home: str | None, away: str | None) ->
     }
 
 
+def _predicted_knockout_winner(home: str, away: str, probabilities: dict) -> str:
+    home_win = probabilities.get("home_win", 0.0)
+    away_win = probabilities.get("away_win", 0.0)
+    return home if home_win >= away_win else away
+
+
 def _resolve_stage(
     model,
     rankings,
@@ -138,7 +144,7 @@ def _resolve_stage(
                 stage_results.append(_unresolved_result(match_number, home, away))
                 continue
 
-            winner = home if result["prediction"] != "away_win" else away
+            winner = _predicted_knockout_winner(home, away, result["probabilities"])
             loser = away if winner == home else home
             stage_results.append(
                 {
