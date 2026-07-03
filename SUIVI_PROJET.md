@@ -31,7 +31,6 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | fix/ui-team-names-and-refresh | Fix noms d'équipes (plus de "domicile/extérieur") + refonte visuelle complète | Diaby |
 | fix/disable-static-cache | Fix cache CDN d'1 an qui servait une page périmée sur Render | Diaby |
 | feature/frontend-multipage-navigation | Découpage du frontend en pages séparées avec navigation | Adrien |
-| feature/automated-retraining | Actualisation quotidienne des données, DVC push, retraining MLflow et quality gate automatique | Adrien |
 
 ---
 
