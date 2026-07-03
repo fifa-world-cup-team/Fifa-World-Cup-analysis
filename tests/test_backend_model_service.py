@@ -61,3 +61,50 @@ def test_predict_match_returns_prediction_and_probabilities() -> None:
 
     assert result["prediction"] in {"home_win", "draw", "away_win"}
     assert abs(sum(result["probabilities"].values()) - 1) < 1e-6
+
+
+def test_predict_match_is_neutral_to_team_order() -> None:
+    def row(home_team, away_team, stage, result, home_rank, away_rank, home_points, away_points):
+        return {
+            "home_team": home_team,
+            "away_team": away_team,
+            "stage": stage,
+            "result": result,
+            "home_rank": home_rank,
+            "away_rank": away_rank,
+            "home_fifa_points": home_points,
+            "away_fifa_points": away_points,
+            "rank_difference": away_rank - home_rank,
+            "points_difference": home_points - away_points,
+        }
+
+    dataset = pd.DataFrame(
+        [
+            row("France", "Argentina", "GROUP_STAGE", "home_win", 3, 1, 1870.7, 1877.3),
+            row("Argentina", "France", "GROUP_STAGE", "away_win", 1, 3, 1877.3, 1870.7),
+            row("Brazil", "Spain", "GROUP_STAGE", "draw", 6, 2, 1761.0, 1874.7),
+            row("Spain", "Brazil", "GROUP_STAGE", "draw", 2, 6, 1874.7, 1761.0),
+            row("Germany", "Italy", "GROUP_STAGE", "away_win", 10, 9, 1717.0, 1718.0),
+            row("Italy", "Germany", "GROUP_STAGE", "home_win", 9, 10, 1718.0, 1717.0),
+            row("France", "Brazil", "LAST_16", "home_win", 3, 6, 1870.7, 1761.0),
+            row("Brazil", "France", "LAST_16", "away_win", 6, 3, 1761.0, 1870.7),
+            row("Argentina", "Spain", "LAST_16", "draw", 1, 2, 1877.3, 1874.7),
+            row("Spain", "Argentina", "LAST_16", "draw", 2, 1, 1874.7, 1877.3),
+            row("Italy", "France", "QUARTER_FINALS", "away_win", 9, 3, 1718.0, 1870.7),
+            row("France", "Italy", "QUARTER_FINALS", "home_win", 3, 9, 1870.7, 1718.0),
+        ]
+    )
+    model, _ = train_model(dataset)
+
+    france_vs_argentina = predict_match(model, RANKINGS, "France", "Argentina", "GROUP_STAGE")
+    argentina_vs_france = predict_match(model, RANKINGS, "Argentina", "France", "GROUP_STAGE")
+
+    assert france_vs_argentina["probabilities"]["home_win"] == pytest.approx(
+        argentina_vs_france["probabilities"]["away_win"]
+    )
+    assert france_vs_argentina["probabilities"]["away_win"] == pytest.approx(
+        argentina_vs_france["probabilities"]["home_win"]
+    )
+    assert france_vs_argentina["probabilities"]["draw"] == pytest.approx(
+        argentina_vs_france["probabilities"]["draw"]
+    )
