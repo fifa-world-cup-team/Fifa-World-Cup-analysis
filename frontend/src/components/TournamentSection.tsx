@@ -109,7 +109,7 @@ function MatchCard({
   return (
     <article
       className={[
-        "relative h-[82px] w-full min-w-0 overflow-hidden rounded-lg border p-2 shadow-md shadow-black/20",
+        "relative h-[90px] w-full min-w-0 overflow-hidden rounded-lg border p-2 shadow-md shadow-black/20",
         isFinal
           ? "border-amber-400/45 bg-amber-500/10"
           : "border-emerald-700/35 bg-emerald-950/80",
