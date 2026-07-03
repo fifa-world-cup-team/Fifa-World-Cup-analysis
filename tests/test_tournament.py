@@ -301,3 +301,31 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
     assert {"Portugal", "USA"} not in [
         {match["home_team"], match["away_team"]} for match in semi_finals
     ]
+
+
+def test_simulate_knockout_stages_ignores_draw_when_selecting_winner(monkeypatch) -> None:
+    def predict_draw_but_away_more_likely(model, rankings, home, away, stage):
+        return {
+            "prediction": "draw",
+            "probabilities": {"home_win": 0.2, "draw": 0.5, "away_win": 0.3},
+        }
+
+    monkeypatch.setattr("backend.tournament.predict_match", predict_draw_but_away_more_likely)
+
+    matches = [
+        {
+            "id": 1,
+            "utc_date": "2026-07-04T00:00:00Z",
+            "status": "TIMED",
+            "stage": "LAST_16",
+            "home_team": _team("Portugal"),
+            "away_team": _team("Spain"),
+            "home_score": None,
+            "away_score": None,
+        },
+    ]
+
+    result = simulate_knockout_stages(None, RANKINGS, matches)
+    match = result["rounds"][1]["matches"][0]
+
+    assert match["winner"] == "Spain"

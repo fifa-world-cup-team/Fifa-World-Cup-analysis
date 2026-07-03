@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import joblib
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
@@ -11,7 +12,18 @@ from scripts.train_baseline_model import FEATURE_COLUMNS
 
 MODEL_NAME = "fifa-world-cup-baseline"
 RANKINGS_PATH = Path("data/processed/fifa_rankings_current.csv")
+LOCAL_MODEL_PATH = Path("models/baseline_model.joblib")
 ENV_PATH = Path(".env")
+RESULT_LABELS = ("home_win", "draw", "away_win")
+KNOCKOUT_STAGES = {
+    "LAST_32",
+    "LAST_16",
+    "ROUND_OF_16",
+    "QUARTER_FINALS",
+    "SEMI_FINALS",
+    "THIRD_PLACE",
+    "FINAL",
+}
 
 
 class PredictionError(Exception):
@@ -44,10 +56,23 @@ def resolve_model_uri(client: MlflowClient, model_name: str, stage: str) -> str:
     return f"models:/{model_name}/{latest.version}"
 
 
+def load_local_model(model_path: Path = LOCAL_MODEL_PATH) -> tuple[Pipeline, str]:
+    if not model_path.exists():
+        raise PredictionError(
+            f"MLflow is unavailable and local model {model_path} is missing. "
+            "Run scripts/train_baseline_model.py first."
+        )
+
+    return joblib.load(model_path), f"local:{model_path}"
+
+
 def load_model() -> tuple[Pipeline, str]:
-    import mlflow
-    import mlflow.sklearn
-    from mlflow.tracking import MlflowClient
+    try:
+        import mlflow
+        import mlflow.sklearn
+        from mlflow.tracking import MlflowClient
+    except ImportError:
+        return load_local_model()
 
     load_env_file()
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
@@ -114,6 +139,63 @@ def build_feature_row(
     return row[FEATURE_COLUMNS]
 
 
+def predict_directional_probabilities(
+    model: Pipeline,
+    features: pd.DataFrame,
+) -> dict[str, float]:
+    probabilities = model.predict_proba(features)[0]
+    classes = model.named_steps["classifier"].classes_
+    result = {label: 0.0 for label in RESULT_LABELS}
+    result.update(dict(zip(classes, (float(p) for p in probabilities))))
+    return result
+
+
+def remap_swapped_probabilities(probabilities: dict[str, float]) -> dict[str, float]:
+    return {
+        "home_win": probabilities["away_win"],
+        "draw": probabilities["draw"],
+        "away_win": probabilities["home_win"],
+    }
+
+
+def average_probabilities(
+    first: dict[str, float],
+    second: dict[str, float],
+) -> dict[str, float]:
+    averaged = {
+        label: (first[label] + second[label]) / 2
+        for label in RESULT_LABELS
+    }
+    total = sum(averaged.values())
+    if total == 0:
+        return averaged
+    return {label: value / total for label, value in averaged.items()}
+
+
+def most_likely_result(probabilities: dict[str, float]) -> str:
+    return max(RESULT_LABELS, key=lambda label: probabilities[label])
+
+
+def remove_draw_for_knockout(
+    probabilities: dict[str, float],
+    stage: str,
+) -> dict[str, float]:
+    if stage not in KNOCKOUT_STAGES:
+        return probabilities
+
+    home_win = probabilities["home_win"]
+    away_win = probabilities["away_win"]
+    total = home_win + away_win
+    if total == 0:
+        return {"home_win": 0.5, "draw": 0.0, "away_win": 0.5}
+
+    return {
+        "home_win": home_win / total,
+        "draw": 0.0,
+        "away_win": away_win / total,
+    }
+
+
 def predict_match(
     model: Pipeline,
     rankings: pd.DataFrame,
@@ -121,12 +203,16 @@ def predict_match(
     away_team: str,
     stage: str,
 ) -> dict:
-    features = build_feature_row(home_team, away_team, stage, rankings)
-    prediction = model.predict(features)[0]
-    probabilities = model.predict_proba(features)[0]
-    classes = model.named_steps["classifier"].classes_
+    direct_features = build_feature_row(home_team, away_team, stage, rankings)
+    swapped_features = build_feature_row(away_team, home_team, stage, rankings)
+    direct_probabilities = predict_directional_probabilities(model, direct_features)
+    swapped_probabilities = remap_swapped_probabilities(
+        predict_directional_probabilities(model, swapped_features)
+    )
+    probabilities = average_probabilities(direct_probabilities, swapped_probabilities)
+    probabilities = remove_draw_for_knockout(probabilities, stage)
 
     return {
-        "prediction": prediction,
-        "probabilities": dict(zip(classes, (float(p) for p in probabilities))),
+        "prediction": most_likely_result(probabilities),
+        "probabilities": probabilities,
     }
