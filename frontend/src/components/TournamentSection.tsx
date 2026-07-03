@@ -19,6 +19,19 @@ const SHORT_STAGE_LABELS: Record<string, string> = {
   SEMI_FINALS: "SF",
   FINAL: "Finale",
 };
+const LEFT_BRACKET_MATCHES: Record<string, number[]> = {
+  LAST_32: [74, 77, 73, 75, 83, 84, 81, 82],
+  LAST_16: [89, 90, 93, 94],
+  QUARTER_FINALS: [97, 98],
+  SEMI_FINALS: [101],
+};
+const RIGHT_BRACKET_MATCHES: Record<string, number[]> = {
+  LAST_32: [76, 78, 79, 80, 86, 88, 85, 87],
+  LAST_16: [91, 92, 95, 96],
+  QUARTER_FINALS: [99, 100],
+  SEMI_FINALS: [102],
+};
+const SIDE_STAGES = ["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS"];
 
 function getBracketRounds(rounds: TournamentRound[]) {
   const byStage = new Map(rounds.map((round) => [round.stage, round]));
@@ -26,6 +39,27 @@ function getBracketRounds(rounds: TournamentRound[]) {
   return BRACKET_STAGES.map((stage) => byStage.get(stage))
     .filter((round): round is TournamentRound => Boolean(round))
     .filter((round) => round.matches.length > 0);
+}
+
+function getRoundByStage(rounds: TournamentRound[], stage: string) {
+  return rounds.find((round) => round.stage === stage);
+}
+
+function getSideRound(
+  rounds: TournamentRound[],
+  stage: string,
+  sideMatches: Record<string, number[]>,
+): TournamentRound | null {
+  const round = getRoundByStage(rounds, stage);
+  if (!round) return null;
+
+  const matchNumbers = sideMatches[stage] ?? [];
+  const matches = matchNumbers
+    .map((matchNumber) => round.matches.find((match) => match.match_number === matchNumber))
+    .filter((match): match is TournamentMatch => Boolean(match));
+
+  if (matches.length === 0) return null;
+  return { stage, matches };
 }
 
 function scoreLabel(match: TournamentMatch) {
@@ -57,15 +91,24 @@ function TeamRow({
   );
 }
 
-function MatchCard({ match, isFinal }: { match: TournamentMatch; isFinal: boolean }) {
+function MatchCard({
+  match,
+  connector = "none",
+}: {
+  match: TournamentMatch;
+  connector?: "left" | "right" | "none";
+}) {
   const status =
     match.source === "actual_result" ? "reel" : match.source === "predicted" ? "predit" : "a venir";
   const score = scoreLabel(match);
 
   return (
     <article className="relative min-w-[170px] rounded-xl border border-emerald-700/35 bg-emerald-950/80 p-2 shadow-md shadow-black/20">
-      {!isFinal && (
+      {connector === "right" && (
         <span className="pointer-events-none absolute left-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
+      )}
+      {connector === "left" && (
+        <span className="pointer-events-none absolute right-full top-1/2 hidden h-px w-6 bg-emerald-400/35 lg:block" />
       )}
       <div className="mb-2 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wide">
         <span className="rounded-full bg-emerald-900/80 px-2 py-0.5 text-emerald-200/70">
@@ -98,13 +141,14 @@ function MatchCard({ match, isFinal }: { match: TournamentMatch; isFinal: boolea
 function BracketColumn({
   round,
   index,
-  isFinal,
+  side,
 }: {
   round: TournamentRound;
   index: number;
-  isFinal: boolean;
+  side: "left" | "right";
 }) {
   const gap = Math.min(12 * 2 ** index, 96);
+  const connector = side === "left" ? "right" : "left";
 
   return (
     <div className="flex min-w-[190px] flex-col">
@@ -116,7 +160,7 @@ function BracketColumn({
           <MatchCard
             key={`${round.stage}-${match.match_number ?? matchIndex}`}
             match={match}
-            isFinal={isFinal}
+            connector={connector}
           />
         ))}
       </div>
@@ -124,8 +168,60 @@ function BracketColumn({
   );
 }
 
+function BracketSide({
+  rounds,
+  side,
+}: {
+  rounds: TournamentRound[];
+  side: "left" | "right";
+}) {
+  const matchGroups = side === "left" ? LEFT_BRACKET_MATCHES : RIGHT_BRACKET_MATCHES;
+  const stages = side === "left" ? SIDE_STAGES : [...SIDE_STAGES].reverse();
+  const sideRounds = stages
+    .map((stage) => getSideRound(rounds, stage, matchGroups))
+    .filter((round): round is TournamentRound => Boolean(round));
+
+  return (
+    <div className="flex items-stretch gap-6">
+      {sideRounds.map((round, index) => {
+        const spacingIndex = side === "left" ? index : sideRounds.length - index - 1;
+        return (
+          <BracketColumn
+            key={`${side}-${round.stage}`}
+            round={round}
+            index={spacingIndex}
+            side={side}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function FinalColumn({ finalRound }: { finalRound: TournamentRound | null }) {
+  const finalMatch = finalRound?.matches[0];
+
+  return (
+    <div className="flex min-w-[210px] flex-col justify-center">
+      <h3 className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-amber-300/80">
+        Finale
+      </h3>
+      <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 shadow-lg shadow-amber-950/30">
+        {finalMatch ? (
+          <MatchCard match={finalMatch} />
+        ) : (
+          <p className="rounded-xl border border-amber-400/20 bg-amber-950/30 p-4 text-center text-sm text-amber-100/70">
+            Finale a determiner
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TournamentBracket({ data }: { data: TournamentResult }) {
   const rounds = getBracketRounds(data.rounds);
+  const finalRound = getRoundByStage(data.rounds, "FINAL") ?? null;
   const thirdPlace = data.rounds.find((round) => round.stage === "THIRD_PLACE");
 
   if (rounds.length === 0) {
@@ -139,15 +235,10 @@ function TournamentBracket({ data }: { data: TournamentResult }) {
   return (
     <div className="mt-5">
       <div className="overflow-x-auto rounded-2xl border border-emerald-800/40 bg-black/15 p-4">
-        <div className="flex min-w-max items-stretch gap-6">
-          {rounds.map((round, index) => (
-            <BracketColumn
-              key={round.stage}
-              round={round}
-              index={index}
-              isFinal={index === rounds.length - 1}
-            />
-          ))}
+        <div className="flex min-w-max items-stretch justify-center gap-8">
+          <BracketSide rounds={data.rounds} side="left" />
+          <FinalColumn finalRound={finalRound} />
+          <BracketSide rounds={data.rounds} side="right" />
         </div>
       </div>
 
@@ -156,7 +247,7 @@ function TournamentBracket({ data }: { data: TournamentResult }) {
           <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-orange-200/80">
             Petite finale
           </h3>
-          <MatchCard match={thirdPlace.matches[0]} isFinal />
+          <MatchCard match={thirdPlace.matches[0]} />
         </div>
       )}
     </div>
