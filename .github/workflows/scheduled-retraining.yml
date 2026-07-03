@@ -1,0 +1,133 @@
+name: Scheduled Data Refresh and Retraining
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scheduled-retraining
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure Git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure DVC remote credentials
+        run: |
+          mkdir -p .dvc
+          cat > .dvc/config.local <<CONFIG
+          ['remote "dagshub"']
+              auth = basic
+              user = ${{ secrets.DAGSHUB_USERNAME }}
+              password = ${{ secrets.DAGSHUB_TOKEN }}
+          CONFIG
+
+      - name: Pull current DVC data
+        run: dvc pull
+
+      - name: Refresh raw and processed data
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          FOOTBALL_DATA_BASE_URL: https://api.football-data.org/v4
+          FOOTBALL_DATA_COMPETITION: WC
+          WORLD_FOOTBALL_RANKING_API_KEY: ${{ secrets.WORLD_FOOTBALL_RANKING_API_KEY }}
+          WORLD_FOOTBALL_RANKING_BASE_URL: https://world-football-ranking.p.rapidapi.com
+          WORLD_FOOTBALL_RANKING_HOST: world-football-ranking.p.rapidapi.com
+          WORLD_FOOTBALL_RANKING_TYPE: official
+        run: python scripts/update_data.py
+
+      - name: Track refreshed data with DVC
+        run: |
+          dvc add \
+            data/raw/worldcup_matches.json \
+            data/processed/matches_processed.csv \
+            data/raw/fifa_ranking_current.json \
+            data/processed/fifa_rankings_current.csv \
+            data/processed/training_matches.csv
+
+      - name: Detect refreshed data changes
+        id: changes
+        run: |
+          if git diff --quiet -- \
+            data/raw/worldcup_matches.json.dvc \
+            data/processed/matches_processed.csv.dvc \
+            data/raw/fifa_ranking_current.json.dvc \
+            data/processed/fifa_rankings_current.csv.dvc \
+            data/processed/training_matches.csv.dvc; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No DVC data changes detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "DVC data changes detected."
+          fi
+
+      - name: Push refreshed data to DagsHub
+        if: steps.changes.outputs.changed == 'true'
+        run: dvc push
+
+      - name: Commit refreshed DVC pointers to dev
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git add \
+            data/raw/worldcup_matches.json.dvc \
+            data/processed/matches_processed.csv.dvc \
+            data/raw/fifa_ranking_current.json.dvc \
+            data/processed/fifa_rankings_current.csv.dvc \
+            data/processed/training_matches.csv.dvc
+          git commit -m "Refresh data and retrain model inputs"
+          git push origin HEAD:dev
+
+      - name: Train candidate model
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: python -m scripts.train_baseline_model
+
+      - name: Run quality gate and promote candidate
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          QUALITY_GATE_MIN_ACCURACY: "0.5"
+          QUALITY_GATE_BACKTEST_MATCH_COUNT: "10"
+          QUALITY_GATE_MIN_IMPROVEMENT: "0.0"
+        run: python -m scripts.promote_model
+
+      - name: Deploy staging backend after promotion
+        if: steps.changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          RENDER_STAGING_DEPLOY_HOOK: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$RENDER_STAGING_DEPLOY_HOOK" ]; then
+            curl -fsS -X POST "$RENDER_STAGING_DEPLOY_HOOK"
+          else
+            echo "RENDER_STAGING_DEPLOY_HOOK is not configured; skipping staging deploy."
+          fi

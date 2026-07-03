@@ -199,7 +199,7 @@ export function TournamentSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-amber-700/30 bg-gradient-to-br from-emerald-950/60 to-amber-950/20 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
+    <section className="relative left-1/2 w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-amber-700/30 bg-gradient-to-br from-emerald-950/60 to-amber-950/20 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
       <h2 className="flex items-center gap-2 text-lg font-semibold text-emerald-50">
         Qui va gagner la Coupe du Monde ?
       </h2>

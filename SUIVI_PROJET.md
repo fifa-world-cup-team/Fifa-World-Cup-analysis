@@ -44,7 +44,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | Dataset ML ranking | `data/processed/fifa_rankings_current.csv` |
 | Dataset d'entraînement enrichi | `data/processed/training_matches.csv` |
 | Git | Le JSON généré est ignoré par Git |
-| Tests | 38 tests passent (unit + intégration + e2e + tournoi + football_data) |
+| Tests | 52 tests passent (unit + intégration + e2e + tournoi + football_data + retraining) |
 | Modèle baseline enrichi | Accuracy locale: 0.643 (dernier run staging: 0.579, versionné dans MLflow) |
 
 ---
@@ -55,7 +55,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 `fifa_ranking_current.json`, `fifa_rankings_current.csv` et `training_matches.csv` trackés avec DVC et poussés sur DagsHub.
 
 ### 2. ~~GitHub Actions CI/CD~~ (fait)
-Les 3 pipelines exigés tournent réellement : PR → dev (tests + build Docker), dev → staging (tests, dvc pull, entraînement candidat, quality gate accuracy >= 0.5, promotion Staging/Production MLflow, déploiement Render), staging → main (vérification du gate + déploiement Render prod). Testés en conditions réelles le 2026-07-02, prédiction confirmée sur les deux environnements.
+Les 3 pipelines exigés tournent réellement : PR → dev (tests + build Docker), dev → staging (tests, dvc pull, entraînement candidat, backtest sur les derniers matchs, comparaison candidat vs champion Production, promotion Staging/Production MLflow seulement si le candidat gagne, déploiement Render), staging → main (vérification du gate + déploiement Render prod). Testés en conditions réelles le 2026-07-02, prédiction confirmée sur les deux environnements.
 ### 3. ~~Backend FastAPI + Docker~~ (fait)
 API FastAPI (`backend/`) qui charge le modèle depuis le MLflow Model Registry (stage configurable via `MODEL_STAGE`), sert `/health` + `POST /predict`. Le conteneur récupère les données via `dvc pull` à son démarrage (identifiants DagsHub passés en variables d'env).
 ### 4. ~~Déploiement cloud~~ (fait, Render)
@@ -77,6 +77,9 @@ Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que
 **Point ouvert** : le rendu visuel final (une fois JS exécuté dans un vrai navigateur) n'a pas pu être vérifié par l'assistant — pas d'accès navigateur, seulement `curl` (qui ne voit que le squelette HTML de chargement, le contenu réel est injecté par React côté client). À valider par l'équipe directement sur https://fifa-frontend-7be5.onrender.com
 ### 7. ~~README final~~ (fait)
 Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.
+
+### 8. ~~Retraining automatique~~ (fait)
+Workflow planifié `scheduled-retraining.yml` : chaque jour, récupération des nouveaux matchs et du classement FIFA, reconstruction du dataset d'entraînement, versioning DVC vers DagsHub, commit des pointeurs sur `dev`, entraînement d'un candidat MLflow, quality gate candidat vs champion, puis redéploiement staging si promotion.
 
 ---
 

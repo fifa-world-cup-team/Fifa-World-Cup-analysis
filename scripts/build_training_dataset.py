@@ -7,6 +7,9 @@ import pandas as pd
 MATCHES_PATH = Path("data/processed/matches_processed.csv")
 RANKINGS_PATH = Path("data/processed/fifa_rankings_current.csv")
 OUTPUT_PATH = Path("data/processed/training_matches.csv")
+INITIAL_ELO = 1500.0
+ELO_K_FACTOR = 30.0
+RECENT_MATCH_COUNT = 5
 
 TEAM_NAME_MAPPING = {
     "Bosnia-Herzegovina": "Bosnia and Herzegovina",
@@ -25,6 +28,20 @@ RANKING_COLUMNS = [
     "rank_change",
     "fifa_points",
     "points_change",
+]
+
+ENGINEERED_FEATURE_COLUMNS = [
+    "home_elo",
+    "away_elo",
+    "elo_difference",
+    "home_recent_form_points",
+    "away_recent_form_points",
+    "home_recent_goals_for_avg",
+    "away_recent_goals_for_avg",
+    "home_recent_goals_against_avg",
+    "away_recent_goals_against_avg",
+    "home_matches_played_before",
+    "away_matches_played_before",
 ]
 
 
@@ -46,6 +63,149 @@ def validate_columns(dataset: pd.DataFrame, required_columns: list[str], label: 
         raise RuntimeError(
             f"{label} is missing required columns: " + ", ".join(missing_columns)
         )
+
+
+def calculate_expected_score(team_elo: float, opponent_elo: float) -> float:
+    return 1 / (1 + 10 ** ((opponent_elo - team_elo) / 400))
+
+
+def result_to_scores(result: str) -> tuple[float, float]:
+    if result == "home_win":
+        return 1.0, 0.0
+    if result == "away_win":
+        return 0.0, 1.0
+    return 0.5, 0.5
+
+
+def team_match_points(result: str, side: str) -> float:
+    home_score, away_score = result_to_scores(result)
+    return home_score if side == "home" else away_score
+
+
+def average_recent(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    recent_values = values[-RECENT_MATCH_COUNT:]
+    return sum(recent_values) / len(recent_values)
+
+
+def get_team_state(team: str, team_history: dict[str, dict[str, list[float] | float]]) -> dict:
+    return team_history.setdefault(
+        team,
+        {
+            "elo": INITIAL_ELO,
+            "form_points": [],
+            "goals_for": [],
+            "goals_against": [],
+        },
+    )
+
+
+def build_team_feature_values(
+    team: str,
+    team_history: dict[str, dict[str, list[float] | float]],
+) -> dict[str, float]:
+    state = get_team_state(team, team_history)
+    form_points = state["form_points"]
+    goals_for = state["goals_for"]
+    goals_against = state["goals_against"]
+
+    return {
+        "elo": float(state["elo"]),
+        "recent_form_points": average_recent(form_points),
+        "recent_goals_for_avg": average_recent(goals_for),
+        "recent_goals_against_avg": average_recent(goals_against),
+        "matches_played_before": float(len(form_points)),
+    }
+
+
+def update_team_history(
+    team_history: dict[str, dict[str, list[float] | float]],
+    home_team: str,
+    away_team: str,
+    home_goals: int,
+    away_goals: int,
+    result: str,
+) -> None:
+    home_state = get_team_state(home_team, team_history)
+    away_state = get_team_state(away_team, team_history)
+
+    home_elo = float(home_state["elo"])
+    away_elo = float(away_state["elo"])
+    home_score, away_score = result_to_scores(result)
+    expected_home = calculate_expected_score(home_elo, away_elo)
+    expected_away = calculate_expected_score(away_elo, home_elo)
+
+    home_state["elo"] = home_elo + ELO_K_FACTOR * (home_score - expected_home)
+    away_state["elo"] = away_elo + ELO_K_FACTOR * (away_score - expected_away)
+
+    home_state["form_points"].append(team_match_points(result, "home"))
+    away_state["form_points"].append(team_match_points(result, "away"))
+    home_state["goals_for"].append(float(home_goals))
+    home_state["goals_against"].append(float(away_goals))
+    away_state["goals_for"].append(float(away_goals))
+    away_state["goals_against"].append(float(home_goals))
+
+
+def add_engineered_match_features(matches: pd.DataFrame) -> pd.DataFrame:
+    validate_columns(
+        matches,
+        [
+            "date",
+            "home_team",
+            "away_team",
+            "home_goals",
+            "away_goals",
+            "result",
+        ],
+        "matches dataset",
+    )
+
+    sort_columns = ["date"]
+    if "match_id" in matches.columns:
+        sort_columns.append("match_id")
+    enriched = matches.copy().sort_values(sort_columns, na_position="last")
+    team_history: dict[str, dict[str, list[float] | float]] = {}
+    rows = []
+
+    for _, match in enriched.iterrows():
+        home_team = match["home_team"]
+        away_team = match["away_team"]
+        home_features = build_team_feature_values(home_team, team_history)
+        away_features = build_team_feature_values(away_team, team_history)
+
+        row = match.to_dict()
+        row.update(
+            {
+                "home_elo": home_features["elo"],
+                "away_elo": away_features["elo"],
+                "elo_difference": home_features["elo"] - away_features["elo"],
+                "home_recent_form_points": home_features["recent_form_points"],
+                "away_recent_form_points": away_features["recent_form_points"],
+                "home_recent_goals_for_avg": home_features["recent_goals_for_avg"],
+                "away_recent_goals_for_avg": away_features["recent_goals_for_avg"],
+                "home_recent_goals_against_avg": home_features[
+                    "recent_goals_against_avg"
+                ],
+                "away_recent_goals_against_avg": away_features[
+                    "recent_goals_against_avg"
+                ],
+                "home_matches_played_before": home_features["matches_played_before"],
+                "away_matches_played_before": away_features["matches_played_before"],
+            }
+        )
+        rows.append(row)
+
+        update_team_history(
+            team_history,
+            home_team,
+            away_team,
+            int(match["home_goals"]),
+            int(match["away_goals"]),
+            match["result"],
+        )
+
+    return pd.DataFrame(rows)
 
 
 def build_ranking_lookup(rankings: pd.DataFrame) -> pd.DataFrame:
@@ -97,7 +257,8 @@ def build_training_dataset(matches: pd.DataFrame, rankings: pd.DataFrame) -> pd.
     )
 
     ranking_lookup = build_ranking_lookup(rankings)
-    training_dataset = add_team_ranking_features(matches, ranking_lookup, "home")
+    matches_with_history = add_engineered_match_features(matches)
+    training_dataset = add_team_ranking_features(matches_with_history, ranking_lookup, "home")
     training_dataset = add_team_ranking_features(training_dataset, ranking_lookup, "away")
 
     missing_rankings = find_missing_rankings(training_dataset)

@@ -9,6 +9,41 @@ KNOCKOUT_STAGES = [
     "FINAL",
 ]
 
+# Match numbers are assigned from the chronological football-data.org order.
+# The 2026 bracket is not a simple chronological chain: some round-of-32
+# winners feed different quarters and semi-finals. Keeping these feeds avoids
+# impossible fixtures between teams that are on opposite sides of the bracket.
+STAGE_MATCH_NUMBERS_BY_DATE = {
+    "LAST_32": [73, 78, 74, 75, 76, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
+    "LAST_16": [90, 89, 91, 92, 93, 94, 95, 96],
+    "QUARTER_FINALS": [97, 98, 99, 100],
+    "SEMI_FINALS": [101, 102],
+    "THIRD_PLACE": [103],
+    "FINAL": [104],
+}
+
+WINNER_FEEDS = {
+    89: (74, 77),
+    90: (73, 75),
+    91: (76, 78),
+    92: (79, 80),
+    93: (83, 84),
+    94: (81, 82),
+    95: (86, 88),
+    96: (85, 87),
+    97: (89, 90),
+    98: (93, 94),
+    99: (91, 92),
+    100: (95, 96),
+    101: (97, 98),
+    102: (99, 100),
+    104: (101, 102),
+}
+
+LOSER_FEEDS = {
+    103: (101, 102),
+}
+
 
 def _team_name(team: dict | None) -> str | None:
     return team["name"] if team else None
@@ -22,13 +57,48 @@ def _decide_winner_loser(match: dict, home: str, away: str) -> tuple[str, str]:
     return home, away
 
 
-def _known_teams(stage_matches: list[dict]) -> list[str]:
-    teams = []
-    for match in stage_matches:
-        for team in (_team_name(match["home_team"]), _team_name(match["away_team"])):
-            if team:
-                teams.append(team)
-    return teams
+def _match_numbers_for_stage(stage: str, stage_matches: list[dict]) -> list[int]:
+    configured = STAGE_MATCH_NUMBERS_BY_DATE.get(stage, [])
+    if len(configured) >= len(stage_matches):
+        return configured[: len(stage_matches)]
+
+    fallback_start = configured[-1] + 1 if configured else 1
+    missing_count = len(stage_matches) - len(configured)
+    return configured + list(range(fallback_start, fallback_start + missing_count))
+
+
+def _fill_missing_teams(
+    home: str | None,
+    away: str | None,
+    feed: tuple[str | None, str | None],
+) -> tuple[str | None, str | None]:
+    candidates = [team for team in feed if team]
+
+    if home is None:
+        home = next((team for team in candidates if team != away), None)
+        if home:
+            candidates.remove(home)
+
+    if away is None:
+        away = next((team for team in candidates if team != home), None)
+
+    return home, away
+
+
+def _unresolved_result(match_number: int, home: str | None, away: str | None) -> dict:
+    return {
+        "match_number": match_number,
+        "home_team": home,
+        "away_team": away,
+        "resolved": False,
+        "winner": None,
+    }
+
+
+def _predicted_knockout_winner(home: str, away: str, probabilities: dict) -> str:
+    home_win = probabilities.get("home_win", 0.0)
+    away_win = probabilities.get("away_win", 0.0)
+    return home if home_win >= away_win else away
 
 
 def _resolve_stage(
@@ -36,45 +106,28 @@ def _resolve_stage(
     rankings,
     stage: str,
     stage_matches: list[dict],
-    source_pool: list[str],
-) -> tuple[list[dict], list[str], list[str]]:
-    """Resolves one knockout stage.
-
-    Matches with both teams already known (from the API) are left as-is.
-    Matches missing a team are filled from `source_pool` (winners/losers
-    carried over from the previous stage), after removing any team from the
-    pool that's already accounted for by a directly-known fixture in this
-    same stage — otherwise a team already assigned to a real match could be
-    popped again into a different, still-unresolved slot.
-    """
-    available = list(source_pool)
-    for team in _known_teams(stage_matches):
-        if team in available:
-            available.remove(team)
-
+    match_numbers: list[int],
+    slot_feeds: dict[int, tuple[str | None, str | None]],
+) -> tuple[list[dict], dict[int, str], dict[int, str]]:
+    """Resolves one knockout stage while preserving the official bracket slots."""
     stage_results = []
-    winners: list[str] = []
-    losers: list[str] = []
+    winners: dict[int, str] = {}
+    losers: dict[int, str] = {}
 
-    for match in stage_matches:
+    for match_number, match in zip(match_numbers, stage_matches):
         home = _team_name(match["home_team"])
         away = _team_name(match["away_team"])
-
-        if home is None and available:
-            home = available.pop(0)
-        if away is None and available:
-            away = available.pop(0)
+        home, away = _fill_missing_teams(home, away, slot_feeds.get(match_number, (None, None)))
 
         if home is None or away is None:
-            stage_results.append(
-                {"home_team": home, "away_team": away, "resolved": False, "winner": None}
-            )
+            stage_results.append(_unresolved_result(match_number, home, away))
             continue
 
         if match["status"] == "FINISHED":
             winner, loser = _decide_winner_loser(match, home, away)
             stage_results.append(
                 {
+                    "match_number": match_number,
                     "home_team": home,
                     "away_team": away,
                     "resolved": True,
@@ -88,15 +141,14 @@ def _resolve_stage(
             try:
                 result = predict_match(model, rankings, home, away, stage)
             except PredictionError:
-                stage_results.append(
-                    {"home_team": home, "away_team": away, "resolved": False, "winner": None}
-                )
+                stage_results.append(_unresolved_result(match_number, home, away))
                 continue
 
-            winner = home if result["prediction"] != "away_win" else away
+            winner = _predicted_knockout_winner(home, away, result["probabilities"])
             loser = away if winner == home else home
             stage_results.append(
                 {
+                    "match_number": match_number,
                     "home_team": home,
                     "away_team": away,
                     "resolved": True,
@@ -106,19 +158,14 @@ def _resolve_stage(
                 }
             )
 
-        winners.append(winner)
-        losers.append(loser)
+        winners[match_number] = winner
+        losers[match_number] = loser
 
     return stage_results, winners, losers
 
 
 def simulate_knockout_stages(model, rankings, matches: list[dict]) -> dict:
-    """Simulates the knockout bracket forward using the trained model for any
-    match whose two teams are already known but not yet finished. This is an
-    approximation, not an official bracket: unresolved slots are filled by
-    chaining winners/losers from earlier rounds in date order, since the API
-    does not expose which specific earlier match feeds which later slot.
-    """
+    """Simulates the knockout bracket using the official 2026 match feeds."""
     by_stage = {stage: [] for stage in KNOCKOUT_STAGES}
     for match in matches:
         if match["stage"] in by_stage:
@@ -126,29 +173,31 @@ def simulate_knockout_stages(model, rankings, matches: list[dict]) -> dict:
     for stage_matches in by_stage.values():
         stage_matches.sort(key=lambda m: m["utc_date"])
 
-    winners_pool: list[str] = []
-    losers_pool: list[str] = []
-    semi_final_winners: list[str] = []
+    winners_by_match_number: dict[int, str] = {}
+    losers_by_match_number: dict[int, str] = {}
     rounds = []
     champion = None
 
     for stage in KNOCKOUT_STAGES:
-        if stage == "THIRD_PLACE":
-            source_pool = losers_pool
-        elif stage == "FINAL":
-            source_pool = semi_final_winners
-        else:
-            source_pool = winners_pool
+        match_numbers = _match_numbers_for_stage(stage, by_stage[stage])
+        feed_map = LOSER_FEEDS if stage == "THIRD_PLACE" else WINNER_FEEDS
+        source_map = losers_by_match_number if stage == "THIRD_PLACE" else winners_by_match_number
+        slot_feeds = {
+            match_number: (
+                source_map.get(feed_map[match_number][0]),
+                source_map.get(feed_map[match_number][1]),
+            )
+            for match_number in match_numbers
+            if match_number in feed_map
+        }
 
         stage_results, winners, losers = _resolve_stage(
-            model, rankings, stage, by_stage[stage], source_pool
+            model, rankings, stage, by_stage[stage], match_numbers, slot_feeds
         )
         rounds.append({"stage": stage, "matches": stage_results})
 
-        if stage == "SEMI_FINALS":
-            semi_final_winners = winners
-            losers_pool = losers
-        winners_pool = winners
+        winners_by_match_number.update(winners)
+        losers_by_match_number.update(losers)
 
         if stage == "FINAL" and stage_results and stage_results[-1]["resolved"]:
             champion = stage_results[-1]["winner"]

@@ -107,7 +107,8 @@ par une Pull Request.
 
 ## Pipelines CI/CD
 
-Trois workflows GitHub Actions, un par transition de branche :
+Quatre workflows GitHub Actions couvrent les transitions de branche et
+l'actualisation automatique des données :
 
 ### 1. `PR -> dev` ([.github/workflows/pr-dev.yml](.github/workflows/pr-dev.yml))
 Déclenché sur toute Pull Request vers `dev`. Étapes : installation des
@@ -122,10 +123,13 @@ Déclenché sur push vers `staging` (fusion d'une PR validée). C'est le
 3. Entraînement d'un modèle candidat (`scripts/train_baseline_model.py`),
    enregistré dans le MLflow Model Registry avec ses métriques, le hash du
    commit Git et la version DVC des données utilisées
-4. `scripts/promote_model.py` : le candidat est passé au stage `Staging`,
-   puis promu au stage `Production` si son accuracy dépasse le seuil de
-   qualité (`QUALITY_GATE_MIN_ACCURACY`, 0.5 par défaut) — sinon il reste en
-   `Staging` et la production n'est pas modifiée
+4. `scripts/promote_model.py` : le candidat est passé au stage `Staging`, puis
+   un backtest est lancé sur les derniers matchs du dataset
+   (`QUALITY_GATE_BACKTEST_MATCH_COUNT`, 10 par défaut). Il n'est promu au stage
+   `Production` que si son accuracy de backtest dépasse le seuil
+   (`QUALITY_GATE_MIN_ACCURACY`, 0.5 par défaut) et bat le modèle champion déjà
+   en `Production` (`QUALITY_GATE_MIN_IMPROVEMENT`, 0.0 par défaut). Si aucun
+   champion n'existe encore, seul le seuil minimum est appliqué.
 5. Déclenchement du redéploiement du service Render de staging
 
 ### 3. `staging -> main` ([.github/workflows/staging-to-main.yml](.github/workflows/staging-to-main.yml))
@@ -133,6 +137,14 @@ Déclenché sur push vers `main`. Vérifie qu'une version du modèle est bien au
 stage `Production` (`scripts/verify_production_model.py` — si aucune version
 n'a passé le gate, le déploiement est bloqué), relance la suite de tests, puis
 déclenche le redéploiement du service Render de production.
+
+### 4. Actualisation quotidienne des données ([.github/workflows/scheduled-retraining.yml](.github/workflows/scheduled-retraining.yml))
+Déclenchée tous les jours à 06:00 UTC et lançable manuellement depuis GitHub
+Actions. Le workflow récupère les derniers matchs et le classement FIFA,
+reconstruit `training_matches.csv`, met à jour les pointeurs DVC, pousse les
+objets vers DagsHub, commit les nouvelles versions de données sur `dev`, puis
+entraîne un candidat MLflow. Si le quality gate passe, le modèle est promu et le
+backend de staging est redéployé.
 
 ## Modèle de promotion
 
@@ -148,6 +160,19 @@ Chaque version enregistrée trace :
 - ses paramètres (type de modèle, colonnes de features)
 - la version des données DVC utilisée pour l'entraîner
 - le hash du commit Git correspondant
+
+## Features ML
+
+Le dataset d'entraînement combine les matchs de Coupe du Monde, le classement
+FIFA et des features calculées avant chaque match : Elo simple, forme récente
+sur les derniers matchs joués, buts marqués/encaissés moyens et différences de
+classement/points FIFA.
+
+Pour la Coupe du Monde, `home_team` et `away_team` sont traités comme équipe A
+et équipe B, pas comme un vrai avantage domicile/extérieur. Les matchs sont donc
+considérés comme joués sur terrain neutre. Si le projet ajoute plus tard des
+matchs internationaux hors Coupe du Monde, on pourra introduire une colonne
+`is_neutral_site` pour distinguer les contextes.
 
 ## Monitoring
 
@@ -212,11 +237,7 @@ docker run -p 8000:8000 --env-file .env fifa-backend
 ### Régénérer le pipeline de données depuis zéro
 
 ```bash
-python scripts/ingest_data.py                 # data/raw/worldcup_matches.json
-python scripts/preprocess_matches.py          # data/processed/matches_processed.csv
-python scripts/ingest_fifa_rankings.py        # data/raw/fifa_ranking_current.json
-python scripts/preprocess_fifa_rankings.py    # data/processed/fifa_rankings_current.csv
-python scripts/build_training_dataset.py      # data/processed/training_matches.csv
+python scripts/update_data.py                 # toutes les données raw/processed + training dataset
 python scripts/train_baseline_model.py        # entraine + logge sur MLflow
 ```
 
