@@ -142,3 +142,120 @@ def test_simulate_knockout_stages_does_not_reuse_a_team_already_in_a_known_fixtu
     teams_seen = [m["home_team"] for m in last_16] + [m["away_team"] for m in last_16]
     teams_seen = [t for t in teams_seen if t is not None]
     assert len(teams_seen) == len(set(teams_seen)), f"a team was reused: {teams_seen}"
+
+
+def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> None:
+    def predict_home_win(model, rankings, home, away, stage):
+        return {
+            "prediction": "home_win",
+            "probabilities": {"home_win": 0.8, "draw": 0.1, "away_win": 0.1},
+        }
+
+    monkeypatch.setattr("backend.tournament.predict_match", predict_home_win)
+
+    round_of_32_winners = [
+        "Germany",  # M74
+        "France",  # M77
+        "Paraguay",  # M73
+        "Sweden",  # M75
+        "Brazil",  # M76
+        "Norway",  # M78
+        "Mexico",  # M79
+        "England",  # M80
+        "Morocco",  # M83
+        "Canada",  # M84
+        "Spain",  # M81
+        "Portugal",  # M82
+        "Argentina",  # M86
+        "Cabo Verde",  # M88
+        "USA",  # M85
+        "Belgium",  # M87
+    ]
+    matches = [
+        {
+            "id": index,
+            "utc_date": f"2026-07-{index + 1:02d}T00:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team(winner),
+            "away_team": _team(f"Loser {index}"),
+            "home_score": 1,
+            "away_score": 0,
+        }
+        for index, winner in enumerate(round_of_32_winners)
+    ]
+
+    for index in range(8):
+        matches.append(
+            {
+                "id": 100 + index,
+                "utc_date": f"2026-08-{index + 1:02d}T00:00:00Z",
+                "status": "TIMED",
+                "stage": "LAST_16",
+                "home_team": None,
+                "away_team": None,
+                "home_score": None,
+                "away_score": None,
+            }
+        )
+    for index in range(4):
+        matches.append(
+            {
+                "id": 200 + index,
+                "utc_date": f"2026-09-{index + 1:02d}T00:00:00Z",
+                "status": "TIMED",
+                "stage": "QUARTER_FINALS",
+                "home_team": None,
+                "away_team": None,
+                "home_score": None,
+                "away_score": None,
+            }
+        )
+    for index in range(2):
+        matches.append(
+            {
+                "id": 300 + index,
+                "utc_date": f"2026-10-{index + 1:02d}T00:00:00Z",
+                "status": "TIMED",
+                "stage": "SEMI_FINALS",
+                "home_team": None,
+                "away_team": None,
+                "home_score": None,
+                "away_score": None,
+            }
+        )
+    matches.append(
+        {
+            "id": 400,
+            "utc_date": "2026-11-01T00:00:00Z",
+            "status": "TIMED",
+            "stage": "FINAL",
+            "home_team": None,
+            "away_team": None,
+            "home_score": None,
+            "away_score": None,
+        }
+    )
+
+    result = simulate_knockout_stages(None, RANKINGS, matches)
+
+    last_16 = result["rounds"][1]["matches"]
+    assert [(m["home_team"], m["away_team"]) for m in last_16] == [
+        ("Germany", "France"),
+        ("Paraguay", "Sweden"),
+        ("Brazil", "Norway"),
+        ("Mexico", "England"),
+        ("Morocco", "Canada"),
+        ("Spain", "Portugal"),
+        ("Argentina", "Cabo Verde"),
+        ("USA", "Belgium"),
+    ]
+
+    semi_finals = result["rounds"][3]["matches"]
+    assert [(m["home_team"], m["away_team"]) for m in semi_finals] == [
+        ("Germany", "Morocco"),
+        ("Brazil", "Argentina"),
+    ]
+    assert {"Morocco", "Brazil"} not in [
+        {match["home_team"], match["away_team"]} for match in semi_finals
+    ]

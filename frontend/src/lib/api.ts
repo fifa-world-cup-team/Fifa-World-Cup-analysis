@@ -40,6 +40,7 @@ export type Prediction = {
 };
 
 export type TournamentMatch = {
+  match_number?: number;
   home_team: string | null;
   away_team: string | null;
   resolved: boolean;
