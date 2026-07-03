@@ -31,6 +31,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | fix/ui-team-names-and-refresh | Fix noms d'équipes (plus de "domicile/extérieur") + refonte visuelle complète | Diaby |
 | fix/disable-static-cache | Fix cache CDN d'1 an qui servait une page périmée sur Render | Diaby |
 | feature/frontend-multipage-navigation | Découpage du frontend en pages séparées avec navigation | Adrien |
+| feature/automated-retraining | Actualisation quotidienne des données, DVC push, retraining MLflow et quality gate automatique | Adrien |
 
 ---
 
@@ -44,7 +45,7 @@ Repo DagsHub : https://dagshub.com/Adrienqry/Fifa-World-Cup-analysis
 | Dataset ML ranking | `data/processed/fifa_rankings_current.csv` |
 | Dataset d'entraînement enrichi | `data/processed/training_matches.csv` |
 | Git | Le JSON généré est ignoré par Git |
-| Tests | 38 tests passent (unit + intégration + e2e + tournoi + football_data) |
+| Tests | 52 tests passent (unit + intégration + e2e + tournoi + football_data + retraining) |
 | Modèle baseline enrichi | Accuracy locale: 0.643 (dernier run staging: 0.579, versionné dans MLflow) |
 
 ---
@@ -77,6 +78,9 @@ Le premier frontend (simple formulaire) était trop pauvre par rapport à ce que
 **Point ouvert** : le rendu visuel final (une fois JS exécuté dans un vrai navigateur) n'a pas pu être vérifié par l'assistant — pas d'accès navigateur, seulement `curl` (qui ne voit que le squelette HTML de chargement, le contenu réel est injecté par React côté client). À valider par l'équipe directement sur https://fifa-frontend-7be5.onrender.com
 ### 7. ~~README final~~ (fait)
 Architecture, CI/CD, promotion, reproductibilité, monitoring, tous les liens de déploiement.
+
+### 8. ~~Retraining automatique~~ (fait)
+Workflow planifié `scheduled-retraining.yml` : chaque jour, récupération des nouveaux matchs et du classement FIFA, reconstruction du dataset d'entraînement, versioning DVC vers DagsHub, commit des pointeurs sur `dev`, entraînement d'un candidat MLflow, quality gate candidat vs champion, puis redéploiement staging si promotion.
 
 ---
 
