@@ -158,7 +158,6 @@ function BracketColumn({
   const groupSpan = stageProgress >= 0 ? 2 ** stageProgress : 1;
   const connectLeft = side === "left" ? columnIndex > 0 : true;
   const connectRight = side === "left" ? true : columnIndex < columnCount - 1;
-  const mergeSide = side === "left" ? "right" : "left";
 
   return (
     <div className="flex min-w-0 flex-col">
@@ -167,7 +166,6 @@ function BracketColumn({
       </h3>
       <div className="grid flex-1 grid-rows-8 gap-2">
         {round.matches.map((match, matchIndex) => {
-          const hasConnector = groupSpan > 1 && (connectLeft || connectRight);
           const rowStart = matchIndex * groupSpan + 1;
           return (
             <div
@@ -175,16 +173,6 @@ function BracketColumn({
               className="relative flex min-h-0 items-center"
               style={{ gridRow: `${rowStart} / span ${groupSpan}` }}
             >
-              {hasConnector && (
-                <span
-                  className={[
-                    "pointer-events-none absolute bottom-[20%] top-[20%] hidden w-px bg-emerald-400/45 lg:block",
-                    mergeSide === "right"
-                      ? "left-[calc(100%+0.75rem)]"
-                      : "right-[calc(100%+0.75rem)]",
-                  ].join(" ")}
-                />
-              )}
               <MatchCard
                 match={match}
                 connectLeft={connectLeft}
