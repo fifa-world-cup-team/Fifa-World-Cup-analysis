@@ -22,7 +22,7 @@ const SHORT_STAGE_LABELS: Record<string, string> = {
 const STAGE_MATCH_NUMBERS_BY_DATE: Record<string, number[]> = {
   LAST_32: [73, 78, 74, 75, 76, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
   LAST_16: [90, 89, 91, 92, 93, 94, 95, 96],
-  QUARTER_FINALS: [97, 98, 99, 100],
+  QUARTER_FINALS: [97, 99, 98, 100],
   SEMI_FINALS: [101, 102],
   FINAL: [104],
 };
