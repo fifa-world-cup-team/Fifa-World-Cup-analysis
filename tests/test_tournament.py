@@ -303,6 +303,86 @@ def test_simulate_knockout_stages_preserves_2026_bracket_halves(monkeypatch) -> 
     ]
 
 
+def test_quarter_final_match_numbers_preserve_chronological_fixture_order(monkeypatch) -> None:
+    def predict_home_win(model, rankings, home, away, stage):
+        return {
+            "prediction": "home_win",
+            "probabilities": {"home_win": 0.8, "draw": 0.1, "away_win": 0.1},
+        }
+
+    monkeypatch.setattr("backend.tournament.predict_match", predict_home_win)
+
+    round_of_32_winners = [
+        "Canada",  # M73
+        "Japan",  # M78
+        "Paraguay",  # M74
+        "Morocco",  # M75
+        "Norway",  # M76
+        "France",  # M77
+        "Mexico",  # M79
+        "England",  # M80
+        "Belgium",  # M82
+        "USA",  # M81
+        "Spain",  # M84
+        "Portugal",  # M83
+        "Switzerland",  # M85
+        "Australia",  # M88
+        "Argentina",  # M86
+        "Colombia",  # M87
+    ]
+    matches = [
+        {
+            "id": index,
+            "utc_date": f"2026-07-{index + 1:02d}T00:00:00Z",
+            "status": "FINISHED",
+            "stage": "LAST_32",
+            "home_team": _team(winner),
+            "away_team": _team(f"Loser {index}"),
+            "home_score": 1,
+            "away_score": 0,
+        }
+        for index, winner in enumerate(round_of_32_winners)
+    ]
+
+    for index in range(8):
+        matches.append(
+            {
+                "id": 100 + index,
+                "utc_date": f"2026-08-{index + 1:02d}T00:00:00Z",
+                "status": "TIMED",
+                "stage": "LAST_16",
+                "home_team": None,
+                "away_team": None,
+                "home_score": None,
+                "away_score": None,
+            }
+        )
+    for index in range(4):
+        matches.append(
+            {
+                "id": 200 + index,
+                "utc_date": f"2026-09-{index + 1:02d}T00:00:00Z",
+                "status": "TIMED",
+                "stage": "QUARTER_FINALS",
+                "home_team": None,
+                "away_team": None,
+                "home_score": None,
+                "away_score": None,
+            }
+        )
+
+    result = simulate_knockout_stages(None, RANKINGS, matches)
+    quarter_finals = result["rounds"][2]["matches"]
+
+    assert [match["match_number"] for match in quarter_finals] == [97, 99, 98, 100]
+    assert [(match["home_team"], match["away_team"]) for match in quarter_finals] == [
+        ("Paraguay", "Canada"),
+        ("Norway", "Mexico"),
+        ("Portugal", "USA"),
+        ("Argentina", "Switzerland"),
+    ]
+
+
 def test_simulate_knockout_stages_ignores_draw_when_selecting_winner(monkeypatch) -> None:
     def predict_draw_but_away_more_likely(model, rankings, home, away, stage):
         return {
