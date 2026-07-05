@@ -19,6 +19,13 @@ const SHORT_STAGE_LABELS: Record<string, string> = {
   SEMI_FINALS: "SF",
   FINAL: "Finale",
 };
+const STAGE_MATCH_NUMBERS_BY_DATE: Record<string, number[]> = {
+  LAST_32: [73, 78, 74, 75, 76, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87],
+  LAST_16: [90, 89, 91, 92, 93, 94, 95, 96],
+  QUARTER_FINALS: [97, 98, 99, 100],
+  SEMI_FINALS: [101, 102],
+  FINAL: [104],
+};
 const LEFT_BRACKET_MATCHES: Record<string, number[]> = {
   LAST_32: [74, 77, 73, 75, 83, 84, 81, 82],
   LAST_16: [89, 90, 93, 94],
@@ -54,8 +61,16 @@ function getSideRound(
   if (!round) return null;
 
   const matchNumbers = sideMatches[stage] ?? [];
+  const fallbackOrder = STAGE_MATCH_NUMBERS_BY_DATE[stage] ?? [];
   const matches = matchNumbers
-    .map((matchNumber) => round.matches.find((match) => match.match_number === matchNumber))
+    .map((matchNumber) => {
+      const directMatch = round.matches.find((match) => match.match_number === matchNumber);
+      if (directMatch) return directMatch;
+
+      const fallbackIndex = fallbackOrder.indexOf(matchNumber);
+      const fallbackMatch = fallbackIndex >= 0 ? round.matches[fallbackIndex] : undefined;
+      return fallbackMatch ? { ...fallbackMatch, match_number: matchNumber } : undefined;
+    })
     .filter((match): match is TournamentMatch => Boolean(match));
 
   if (matches.length === 0) return null;
